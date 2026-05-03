@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
-
 void main() {
   runApp(const GameOnApp());
 }
@@ -17,7 +16,7 @@ class GameOnApp extends StatelessWidget {
         primarySwatch: Colors.green,
         fontFamily: 'Inter',
       ),
-      home: LoginScreen(), // Muestra el login
+      home: const LoginScreen(), // Muestra el login
     );
   }
 }
