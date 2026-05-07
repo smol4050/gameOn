@@ -1,177 +1,253 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'sign_in_screen.dart';
+import 'home_screen.dart';
+import '../services/auth_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  // 🔹 CONTROLADORES DE TEXTO
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  
+  bool _isLoading = false;
+
+  // 🔹 LÓGICA DE LOGIN
+  void _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor llena todos los campos')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await AuthService().loginWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (user != null) {
+        if (!mounted) return;
+        // Si el login es exitoso, vamos al Home
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Error al iniciar sesión'), 
+          backgroundColor: Colors.red
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F8FF),
       body: SafeArea(
-        child: Center(
-          child: Container(
-            width: 390,
-            height: 844,
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 120),
+        // 🔹 Agregamos SingleChildScrollView para evitar que el teclado tape los inputs
+        child: SingleChildScrollView(
+          child: Center(
+            child: Container(
+              width: 390,
+              // Eliminamos el height fijo para que se adapte al contenido
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 80),
 
-                // 🔹 TITLE
-                const Text(
-                  'Game On',
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                const Text(
-                  'Encuentra tu partido',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF4A5565),
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // 🔹 EMAIL INPUT
-                _inputField(
-                  hint: 'Email',
-                  icon: Icons.email_outlined,
-                ),
-
-                const SizedBox(height: 16),
-
-                // 🔹 PASSWORD INPUT
-                _inputField(
-                  hint: 'Contraseña',
-                  icon: Icons.lock_outline,
-                  obscure: true,
-                ),
-
-                const SizedBox(height: 16),
-
-                // 🔹 LOGIN BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Iniciar Sesión',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward, size: 18),
-                      ],
+                  // 🔹 TITLE
+                  const Text(
+                    'Game On',
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
-                // 🔹 REGISTER BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text(
-                      'Registrarse',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF364153),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // 🔹 FORGOT PASSWORD
-                const Center(
-                  child: Text(
-                    'Olvidé mi contraseña',
+                  const Text(
+                    'Encuentra tu partido',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Color(0xFF2E7D32),
-                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF4A5565),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 30),
+                  const SizedBox(height: 40),
 
-                // 🔹 DIVIDER
-                const Row(
-                  children: [
-                    Expanded(
-                      child: Divider(color: Color(0xFFE5E7EB)),
+                  // 🔹 EMAIL INPUT
+                  _inputField(
+                    hint: 'Email',
+                    icon: Icons.email_outlined,
+                    controller: _emailController,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🔹 PASSWORD INPUT
+                  _inputField(
+                    hint: 'Contraseña',
+                    icon: Icons.lock_outline,
+                    obscure: true,
+                    controller: _passwordController,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🔹 LOGIN BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login, // Llama a la función
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Iniciar Sesión',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward, size: 18, color: Colors.white),
+                              ],
+                            ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        'O continúa con',
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🔹 REGISTER BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton(
+                      // 🔹 NAVEGACIÓN A LA PANTALLA DE REGISTRO
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SignInScreen()),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Registrarse',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF6A7282),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF364153),
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: Divider(color: Color(0xFFE5E7EB)),
-                    ),
-                  ],
-                ),
+                  ),
 
-                const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
-                // 🔹 SOCIAL BUTTONS
-                Row(
-                  children: [
-                    Expanded(
-                      child: _socialButton(
-                        text: 'Google',
-                        icon: Icons.g_mobiledata,
+                  // 🔹 FORGOT PASSWORD
+                  const Center(
+                    child: Text(
+                      'Olvidé mi contraseña',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF2E7D32),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _socialButton(
-                        text: 'Apple',
-                        icon: Icons.apple,
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // 🔹 DIVIDER
+                  const Row(
+                    children: [
+                      Expanded(
+                        child: Divider(color: Color(0xFFE5E7EB)),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'O continúa con',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF6A7282),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(color: Color(0xFFE5E7EB)),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // 🔹 SOCIAL BUTTONS
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _socialButton(
+                          text: 'Google',
+                          icon: Icons.g_mobiledata,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _socialButton(
+                          text: 'Apple',
+                          icon: Icons.apple,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -179,11 +255,12 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  // 🔹 INPUT COMPONENT
+  // 🔹 INPUT COMPONENT ACTUALIZADO
   Widget _inputField({
     required String hint,
     required IconData icon,
     bool obscure = false,
+    required TextEditingController controller,
   }) {
     return Container(
       height: 58,
@@ -192,6 +269,7 @@ class LoginScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: TextField(
+        controller: controller, // 🔹 Pasamos el controlador
         obscureText: obscure,
         decoration: InputDecoration(
           hintText: hint,
