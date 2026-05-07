@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // Importa las opciones generadas por FlutterFire
+
+import 'firebase_options.dart';
 import 'screens/loading_screen.dart';
+import 'theme/colors.dart';
 
 void main() async {
-  // Asegura la inicialización de Flutter antes de llamar código nativo (Firebase)
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializamos Firebase
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   runApp(const GameOnApp());
 }
 
@@ -24,10 +24,12 @@ class GameOnApp extends StatelessWidget {
       title: 'GameOn',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF2E7D32),
+        scaffoldBackgroundColor: AppColors.scaffoldBackground,
+        primaryColor: AppColors.primary,
         fontFamily: 'Inter',
+        useMaterial3: true,
       ),
-      home: const LoadingScreen(), // Llamamos a la pantalla de carga correcta
+      home: const LoadingScreen(),
     );
   }
 }
