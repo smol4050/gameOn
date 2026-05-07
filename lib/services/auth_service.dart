@@ -16,7 +16,6 @@ class AuthService {
       );
       return result.user; // Devuelve los datos del usuario si fue exitoso
     } catch (e) {
-      print('Error en registro: $e');
       return null; // Devuelve null si falló (ej. correo ya existe)
     }
   }
@@ -30,7 +29,6 @@ class AuthService {
       );
       return result.user;
     } catch (e) {
-      print('Error en inicio de sesión: $e');
       return null; // Devuelve null si la contraseña es incorrecta
     }
   }

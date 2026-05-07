@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
+import '../services/auth_service.dart'; // Importamos el backend
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -8,14 +10,86 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
+  // 🔹 VARIABLES DE ESTADO
   bool obscure1 = true;
   bool obscure2 = true;
+  bool _isLoading = false;
 
   String? selectedSport;
   String? selectedLevel;
 
   final sports = ['Fútbol', 'Basket', 'Tenis', 'Ultimate', 'Otro'];
   final levels = ['Principiante', 'Intermedio', 'Avanzado'];
+
+  // 🔹 CONTROLADORES DE TEXTO
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  // 🔹 LÓGICA DE REGISTRO
+  void _register() async {
+    // 1. Validar que no haya campos vacíos
+    if (_nameController.text.isEmpty || 
+        _emailController.text.isEmpty || 
+        _passwordController.text.isEmpty || 
+        _confirmPasswordController.text.isEmpty ||
+        selectedSport == null || 
+        selectedLevel == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, llena todos los campos y selecciones.')),
+      );
+      return;
+    }
+
+    // 2. Validar que las contraseñas coincidan
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Las contraseñas no coinciden.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    // 3. Iniciar estado de carga
+    setState(() => _isLoading = true);
+
+    // 4. Llamar a Firebase Auth
+    final user = await AuthService().registerWithEmail(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    setState(() => _isLoading = false);
+
+    // 5. Manejar el resultado
+    if (user != null) {
+      if (!mounted) return;
+      // Registro exitoso: Lo llevamos al Home y borramos el historial para que no vuelva atrás
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al registrar. El correo ya existe o es inválido.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    // Liberar memoria al cerrar la pantalla
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,23 +190,25 @@ class _SignInScreenState extends State<SignInScreen> {
 
                     const SizedBox(height: 30),
 
-                    // 🔹 FORM
+                    // 🔹 FORMULARIO
                     _label('Nombre Completo'),
-                    _input('Nombre'),
+                    _input('Nombre', _nameController),
 
                     _label('Correo Electrónico'),
-                    _input('tu@correo.com'),
+                    _input('tu@correo.com', _emailController),
 
                     _label('Contraseña'),
                     _passwordInput(
                       obscure1,
                       () => setState(() => obscure1 = !obscure1),
+                      _passwordController,
                     ),
 
                     _label('Confirmar Contraseña'),
                     _passwordInput(
                       obscure2,
                       () => setState(() => obscure2 = !obscure2),
+                      _confirmPasswordController,
                     ),
 
                     _label('Deporte Preferido'),
@@ -147,25 +223,28 @@ class _SignInScreenState extends State<SignInScreen> {
 
                     const SizedBox(height: 24),
 
-                    // 🔹 BOTÓN
+                    // 🔹 BOTÓN COMPLETAR REGISTRO
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: _isLoading ? null : _register,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2E7D32),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Completar Registro',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                'Completar Registro',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -221,8 +300,8 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  // 🔹 INPUT
-  Widget _input(String hint) {
+  // 🔹 INPUT MODIFICADO PARA RECIBIR CONTROLADOR
+  Widget _input(String hint, TextEditingController controller) {
     return Container(
       height: 54,
       decoration: BoxDecoration(
@@ -231,6 +310,7 @@ class _SignInScreenState extends State<SignInScreen> {
         color: Colors.white,
       ),
       child: TextField(
+        controller: controller,
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
@@ -240,8 +320,8 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  // 🔹 PASSWORD INPUT
-  Widget _passwordInput(bool obscure, VoidCallback toggle) {
+  // 🔹 PASSWORD INPUT MODIFICADO PARA RECIBIR CONTROLADOR
+  Widget _passwordInput(bool obscure, VoidCallback toggle, TextEditingController controller) {
     return Container(
       height: 54,
       decoration: BoxDecoration(
@@ -250,6 +330,7 @@ class _SignInScreenState extends State<SignInScreen> {
         color: Colors.white,
       ),
       child: TextField(
+        controller: controller,
         obscureText: obscure,
         decoration: InputDecoration(
           hintText: '••••••••',

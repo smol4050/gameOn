@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "416742714229",
+    "project_id": "gameon-223cd",
+    "storage_bucket": "gameon-223cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:416742714229:android:4b75e21a90025f442c413c",
+        "android_client_info": {
+          "package_name": "com.example.gameon"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzM3hw6ZYzDzRsnT8xvYRaF7dO3yLrT_Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

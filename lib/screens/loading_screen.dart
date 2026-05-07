@@ -166,7 +166,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: OutlinedButton(
                       onPressed: () {
                         // Navegación hacia la pantalla de registro
-                        print('¡EL BOTÓN DE REGISTRO FUNCIONA!');
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const SignInScreen()),
