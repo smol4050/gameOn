@@ -8,12 +8,7 @@ class HomeScreen extends StatelessWidget {
   // 🔹 FUNCIÓN SEEDER PARA POBLAR FIREBASE (Con 6 partidos más)
   Future<void> _seedDatabase(BuildContext context) async {
     final mockMatches = [
-      {'title': 'Basket 3x3 Callejero', 'location': 'Parque del Perro', 'date': '29 abr', 'time': '17:00', 'slots': '6/12'},
-      {'title': 'Tenis Dobles (Nivel B)', 'location': 'Club Campestre', 'date': '30 abr', 'time': '08:00', 'slots': '2/4'},
-      {'title': 'Voley Arena Mixto', 'location': 'Canchas Panamericanas', 'date': '01 may', 'time': '16:00', 'slots': '10/12'},
-      {'title': 'Fútbol 5 Femenino', 'location': 'Gol 5, Sur', 'date': '02 may', 'time': '19:00', 'slots': '5/10'},
-      {'title': 'Ultimate Mixto Open', 'location': 'Cancha Blanca, Norte', 'date': '03 may', 'time': '15:00', 'slots': '12/20'},
-      {'title': 'Pádel Nivel Pro', 'location': 'Padel House', 'date': '04 may', 'time': '20:00', 'slots': '1/4'},
+      
     ];
 
     try {
