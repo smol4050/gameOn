@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // 🔹 Agregado para guardar el perfil
+import 'package:firebase_auth/firebase_auth.dart';     // 🔹 Agregado para el manejo de errores
+
 import 'home_screen.dart';
 import '../services/auth_service.dart'; // Importamos el backend
 
@@ -53,31 +56,39 @@ class _SignInScreenState extends State<SignInScreen> {
     // 3. Iniciar estado de carga
     setState(() => _isLoading = true);
 
-    // 4. Llamar a Firebase Auth
-    final user = await AuthService().registerWithEmail(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
-
-    setState(() => _isLoading = false);
-
-    // 5. Manejar el resultado
-    if (user != null) {
-      if (!mounted) return;
-      // Registro exitoso: Lo llevamos al Home y borramos el historial para que no vuelva atrás
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
+    try {
+      // 4. Crear usuario en Auth
+      final user = await AuthService().registerWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
-    } else {
+
+      if (user != null) {
+        // 5. Guardar Perfil en Firestore [P1]
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'fullName': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'preferredSport': selectedSport,
+          'skillLevel': selectedLevel,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      // Capturamos el error real gracias a la mejora en AuthService
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error al registrar. El correo ya existe o es inválido.'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(e.message ?? 'Error al registrar usuario'), backgroundColor: Colors.red),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
