@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'sign_in_screen.dart';
-import 'home_screen.dart';
+import 'main_navigation_screen.dart'; // 🔹 Importamos el nuevo contenedor de navegación
 import '../services/auth_service.dart';
+import 'complete_profile_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,7 +19,48 @@ class _LoginScreenState extends State<LoginScreen> {
   
   bool _isLoading = false;
 
-  // 🔹 LÓGICA DE LOGIN
+  // 🔹 LÓGICA DE GOOGLE LOGIN
+  void _loginWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await AuthService().signInWithGoogle();
+      
+      if (result != null) {
+        User user = result['user'];
+        bool isNewUser = result['isNewUser'];
+
+        if (!mounted) return;
+
+        if (isNewUser) {
+          // Si es nuevo, va a completar Deporte y Nivel
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CompleteProfileScreen(
+                uid: user.uid,
+                name: user.displayName ?? '',
+                email: user.email ?? '',
+              ),
+            ),
+          );
+        } else {
+          // Si ya existe, va al Home (MainNavigationScreen)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al iniciar sesión con Google: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // 🔹 LÓGICA DE LOGIN CON EMAIL
   void _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -37,10 +79,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user != null) {
         if (!mounted) return;
-        // Si el login es exitoso, vamos al Home
+        // Si el login es exitoso, vamos al Home (MainNavigationScreen)
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -129,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _login, // Llama a la función
+                      onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2E7D32),
                         shape: RoundedRectangleBorder(
@@ -235,6 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: _socialButton(
                           text: 'Google',
                           icon: Icons.g_mobiledata,
+                          onTap: _isLoading ? null : _loginWithGoogle,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -242,6 +285,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: _socialButton(
                           text: 'Apple',
                           icon: Icons.apple,
+                          onTap: () {
+                          },
                         ),
                       ),
                     ],
@@ -255,7 +300,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // 🔹 INPUT COMPONENT ACTUALIZADO
   Widget _inputField({
     required String hint,
     required IconData icon,
@@ -269,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: TextField(
-        controller: controller, // 🔹 Pasamos el controlador
+        controller: controller,
         obscureText: obscure,
         decoration: InputDecoration(
           hintText: hint,
@@ -285,30 +329,34 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // 🔹 SOCIAL BUTTON
   Widget _socialButton({
     required String text,
     required IconData icon,
+    VoidCallback? onTap, // Permitimos pasar una función para el tap
   }) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: BorderRadius.circular(14),
+          color: Colors.white, 
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 32),
+            const SizedBox(width: 8),
+            Text(
+              text,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

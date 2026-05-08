@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'main_navigation_screen.dart';
 import 'login_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -12,76 +14,66 @@ class _LoadingScreenState extends State<LoadingScreen> {
   @override
   void initState() {
     super.initState();
-    // Navega al login después de 3 segundos
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return; // [P2] Evita errores si el widget se desmontó
+    _checkUserStatus();
+  }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    });
+  Future<void> _checkUserStatus() async {
+    try {
+      // Esperamos 2 segundos para mostrar el logo
+      await Future.delayed(const Duration(seconds: 2));
+      
+      if (!mounted) return;
+
+      // Verificamos si Firebase ya tiene un usuario activo
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // Sesión activa -> Al Home (MainNavigation)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      } else {
+        // No hay sesión -> Al Login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    } catch (e) {
+      // 🔹 SI HAY UN ERROR (ej. Firebase no inicializado), LO ATRAPAMOS AQUÍ
+      debugPrint("Error crítico en LoadingScreen: $e");
+      
+      if (mounted) {
+        // Forzamos la navegación al Login para que no se quede trabado
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return const Scaffold(
+      backgroundColor: Color(0xFF2E7D32),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 100),
-            const Text(
+            Icon(Icons.sports_soccer, size: 100, color: Colors.white),
+            SizedBox(height: 24),
+            Text(
               'Game On',
               style: TextStyle(
-                color: Color(0xFF2E7D32),
-                fontSize: 64,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
+                fontSize: 42,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Encuentra tu partido',
-              style: TextStyle(
-                color: Color(0xFF4A5565),
-                fontSize: 20,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            const SizedBox(height: 50),
-            // Asegúrate de cambiar esto por un asset local a futuro
-            Container(
-              width: 245,
-              height: 435,
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage("https://placehold.co/245x435"),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(height: 50),
-            Container(
-              width: 143,
-              height: 27,
-              decoration: const ShapeDecoration(
-                color: Color(0xFFD9D9D9),
-                shape: StadiumBorder(),
-              ),
-              child: const Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
-                  ),
-                ),
-              ),
-            ),
+            SizedBox(height: 48),
+            CircularProgressIndicator(color: Colors.white),
           ],
         ),
       ),

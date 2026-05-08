@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CrearScreen extends StatefulWidget {
   const CrearScreen({super.key});
@@ -12,6 +13,7 @@ class _CrearScreenState extends State<CrearScreen> {
   TimeOfDay? selectedTime;
   int players = 0;
   int price = 2000;
+  bool _isLoading = false;
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController priceController =
@@ -75,6 +77,43 @@ class _CrearScreenState extends State<CrearScreen> {
   String get formattedTime {
     if (selectedTime == null) return 'Seleccionar';
     return selectedTime!.format(context);
+  }
+
+  // 🔹 FUNCIÓN PARA GUARDAR EN FIREBASE
+  Future<void> _crearPartido() async {
+    if (nameController.text.isEmpty || selectedDate == null || selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor completa los datos básicos (Nombre, Fecha y Hora)')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await FirebaseFirestore.instance.collection('matches').add({
+        'title': nameController.text.trim(),
+        'category': 'Fútbol', // Podrías hacerlo dinámico capturando el deporte seleccionado
+        'date': formattedDate,
+        'time': formattedTime,
+        'location': 'Cancha por definir', // Podrías capturarlo de _PlaceCard
+        'slots': "0/$players",
+        'price': "\$${priceController.text} COP",
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+      Navigator.pop(context); // Regresa a la pantalla principal
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Partido creado con éxito'), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al crear: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -196,21 +235,17 @@ class _CrearScreenState extends State<CrearScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            onPressed: () {
-              debugPrint('Nombre: ${nameController.text}');
-              debugPrint('Fecha: $formattedDate');
-              debugPrint('Hora: $formattedTime');
-              debugPrint('Jugadores: $players');
-              debugPrint('Precio: $price');
-            },
-            child: const Text(
-              'CREAR PARTIDO',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+            onPressed: _isLoading ? null : _crearPartido, // 🔹 Conectado a la función
+            child: _isLoading 
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text(
+                  'CREAR PARTIDO',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
           ),
         ),
       ),
