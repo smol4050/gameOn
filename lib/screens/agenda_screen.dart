@@ -51,17 +51,25 @@ class AgendaScreen extends StatelessWidget {
                 final tomorrowStart = todayStart.add(const Duration(days: 1));
 
                 // Filtros con validación de seguridad (evita que la app se cierre si falta una fecha)
-                final todayEvents = allEvents.where((doc) {
+               final todayEvents = allEvents.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  if (data['date'] == null) return false;
-                  final date = (data['date'] as Timestamp).toDate();
+                  final dateValue = data['date'];
+                  
+                  // Si no es un Timestamp (es String o null), lo ignoramos para no romper la app
+                  if (dateValue is! Timestamp) return false;
+
+                  final date = dateValue.toDate();
                   return DateTime(date.year, date.month, date.day).isAtSameMomentAs(todayStart);
                 }).toList();
 
+                // Filtro para PRÓXIMOS 
                 final upcomingEvents = allEvents.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  if (data['date'] == null) return false;
-                  final date = (data['date'] as Timestamp).toDate();
+                  final dateValue = data['date'];
+
+                  if (dateValue is! Timestamp) return false;
+
+                  final date = dateValue.toDate();
                   return date.isAfter(tomorrowStart) || date.isAtSameMomentAs(tomorrowStart);
                 }).toList();
 
@@ -204,10 +212,13 @@ Widget _buildAgendaCard(BuildContext context, QueryDocumentSnapshot doc) {
     String dateStr = 'Fecha pendiente';
     String timeStr = '--:--';
     
-    if (data['date'] != null) {
+    if (data['date'] != null && data['date'] is Timestamp) {
       DateTime dateTime = (data['date'] as Timestamp).toDate();
       dateStr = DateFormat('dd MMMM', 'es').format(dateTime);
       timeStr = DateFormat('hh:mm a').format(dateTime);
+    } else {
+      dateStr = "Error de formato";
+      timeStr = "--:--";
     }
     
 return GestureDetector(

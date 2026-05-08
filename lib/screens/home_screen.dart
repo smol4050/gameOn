@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'confirmar_unirse_screen.dart';
 import '../theme/colors.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,9 +16,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Map<String, dynamic>> categorias = [
     {'title': 'Todos', 'emoji': '🌍'},
-    {'title': 'Pádel', 'emoji': '🎾'},
-    {'title': 'Voley', 'emoji': '🏐'},
     {'title': 'Fútbol', 'emoji': '⚽'},
+    {'title': 'Baloncesto', 'emoji': '🏀'},
+    {'title': 'Pádel', 'emoji': '🎾'},
+    {'title': 'Tenis', 'emoji': '🎾'},
+    {'title': 'Ultimate', 'emoji': '🥏'},
   ];
 
   @override
@@ -199,15 +202,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // CARD PREMIUM
-  Widget _buildMatchCard(
-    Map<String, dynamic> data,
-    String docId,
-  ) {
+ Widget _buildMatchCard(Map<String, dynamic> data, String docId) {
     final title = data['title'] ?? 'Partido';
     final sport = data['sport'] ?? 'Deporte';
-    final date = data['date'] ?? 'Fecha';
     final location = data['location'] ?? 'Ubicación';
-    final players = data['players'] ?? 0;
+    
+    // 🔹 Lógica de Cupos (Slots)
+    final int joined = data['joinedSlots'] ?? 0;
+    final int total = data['totalSlots'] ?? 10;
+    final double progress = (joined / total).clamp(0.0, 1.0);
+
+    // 🔹 Formateo de Fecha Seguro (Timestamp a String)
+    String dateStr = 'Fecha pendiente';
+    if (data['date'] != null && data['date'] is Timestamp) {
+      DateTime dateTime = (data['date'] as Timestamp).toDate();
+      dateStr = DateFormat('dd MMMM • hh:mm a', 'es').format(dateTime);
+    }
 
     return GestureDetector(
       onTap: () {
@@ -236,8 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -245,122 +254,69 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: AppColors.primary
-                        .withValues(alpha: 0.12),
-                    borderRadius:
-                        BorderRadius.circular(18),
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
-                  child: const Icon(
-                    Icons.sports_soccer,
-                    color: AppColors.primary,
-                    size: 30,
-                  ),
+                  child: const Icon(Icons.sports_soccer, color: AppColors.primary, size: 30),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color:
-                              AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        sport,
-                        style: const TextStyle(
-                          color:
-                              AppColors.textSecondary,
-                        ),
-                      ),
+                      Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                      const SizedBox(height: 4),
+                      Text(sport, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
                     ],
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 22),
-
+            const SizedBox(height: 20),
             Row(
               children: [
-                const Icon(
-                  Icons.calendar_today_rounded,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
+                const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
                 const SizedBox(width: 8),
-                Text(
-                  date,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
+                Text(dateStr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(location, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14), overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // 🔹 BARRA DE PROGRESO DE CUPOS
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('$joined / $total jugadores', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                    Text('${(progress * 100).toInt()}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: const Color(0xFFF3F4F6),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      progress >= 1.0 ? Colors.red : AppColors.primary
+                    ),
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 14),
-
-            Row(
-              children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    location,
-                    style: const TextStyle(
-                      color:
-                          AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '$players jugadores unidos',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color:
-                          AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 22,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius:
-                        BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Ver más',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              ],
-            )
           ],
         ),
       ),
