@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'confirmar_unirse_screen.dart';
 import '../theme/colors.dart';
 import 'package:intl/intl.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -69,23 +70,29 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (_) => const NotificationsScreen())
             ),
-            child: const Icon(
-              Icons.notifications_none_rounded,
-              color: AppColors.primary,
+            child: Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],
