@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // 🔹 Agregado para guardar el perfil
 import 'package:firebase_auth/firebase_auth.dart';     // 🔹 Agregado para el manejo de errores
-
-import 'home_screen.dart';
+import 'main_navigation_screen.dart';
 import '../services/auth_service.dart'; // Importamos el backend
 
 class SignInScreen extends StatefulWidget {
@@ -66,17 +65,18 @@ class _SignInScreenState extends State<SignInScreen> {
       if (user != null) {
         // 5. Guardar Perfil en Firestore [P1]
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'fullName': _nameController.text.trim(),
+          'uid': user.uid,
+          'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
-          'preferredSport': selectedSport,
-          'skillLevel': selectedLevel,
+          'sport': selectedSport,
+          'level': selectedLevel,
           'createdAt': FieldValue.serverTimestamp(),
         });
 
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {

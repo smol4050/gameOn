@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CrearScreen extends StatefulWidget {
   const CrearScreen({super.key});
@@ -10,12 +11,16 @@ class CrearScreen extends StatefulWidget {
 class _CrearScreenState extends State<CrearScreen> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
-  int players = 0;
+  int players = 10; // Empezamos con un número razonable
   int price = 2000;
+  bool _isLoading = false;
+
+  // 🔹 NUEVAS VARIABLES DE SELECCIÓN
+  String? _selectedSport;
+  String? _selectedLocation;
 
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController priceController =
-      TextEditingController(text: '2000');
+  final TextEditingController priceController = TextEditingController(text: '2000');
 
   @override
   void dispose() {
@@ -77,6 +82,64 @@ class _CrearScreenState extends State<CrearScreen> {
     return selectedTime!.format(context);
   }
 
+  // 🔹 FUNCIÓN PARA GUARDAR EN FIREBASE
+  Future<void> _crearPartido() async {
+    if (nameController.text.isEmpty || 
+        selectedDate == null || 
+        selectedTime == null || 
+        _selectedSport == null || 
+        _selectedLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor completa todos los campos (Nombre, Deporte, Lugar, Fecha y Hora)')),
+      );
+      return;
+    }
+
+    if (players <= 0) {
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El número de jugadores debe ser mayor a 0')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 🔹 COMBINAR FECHA Y HORA EN UN TIMESTAMP
+      final DateTime fullDateTime = DateTime(
+        selectedDate!.year,
+        selectedDate!.month,
+        selectedDate!.day,
+        selectedTime!.hour,
+        selectedTime!.minute,
+      );
+
+      await FirebaseFirestore.instance.collection('matches').add({
+        'title': nameController.text.trim(),
+        'sport': _selectedSport,
+        'location': _selectedLocation,
+        'date': Timestamp.fromDate(fullDateTime),
+        'joinedSlots': 0,
+        'totalSlots': players,
+        'price': price,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Partido creado con éxito'), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      debugPrint("Error al crear partido: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al crear: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,16 +177,25 @@ class _CrearScreenState extends State<CrearScreen> {
             const SizedBox(height: 12),
 
             SizedBox(
-              height: 160,
+              height: 120, // Ajusté la altura
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children: const [
-                  _SportCard(title: 'Pádel', emoji: '🎾', color: Color(0xFF1976D2)),
-                  _SportCard(title: 'Voley', emoji: '🏐', color: Color(0xFFF57C00)),
-                  _SportCard(title: 'Fútbol', emoji: '⚽', color: Color(0xFF2E7D32)),
-                  _SportCard(title: 'Tenis', emoji: '🎾', color: Color(0xFF7D2E2E)),
-                  _SportCard(title: 'Ultimate', emoji: '🥏', color: Color(0xFF542E7D)),
-                ],
+                children: [
+                  'Fútbol', 'Baloncesto', 'Tenis', 'Pádel', 'Ultimate'
+                ].map((sport) {
+                  final emojis = {'Fútbol':'⚽', 'Baloncesto':'🏀', 'Tenis':'🎾', 'Pádel':'🎾', 'Ultimate':'🥏'};
+                  final colors = {'Fútbol':Colors.green, 'Baloncesto':Colors.orange, 'Tenis':Colors.red, 'Pádel':Colors.blue, 'Ultimate':Colors.deepPurple};
+                  
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedSport = sport),
+                    child: _SportCard(
+                      title: sport, 
+                      emoji: emojis[sport]!, 
+                      color: colors[sport]!,
+                      isSelected: _selectedSport == sport, // 👈 Se marca si está seleccionado
+                    ),
+                  );
+                }).toList(),
               ),
             ),
 
@@ -133,15 +205,24 @@ class _CrearScreenState extends State<CrearScreen> {
             _mapPlaceholder(),
             const SizedBox(height: 16),
 
-            const Wrap(
+            Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                _PlaceCard(name: 'Cancha UAO', zone: 'Sur'),
-                _PlaceCard(name: 'Gol Cinco Norte', zone: 'Norte'),
-                _PlaceCard(name: 'Padel Pro', zone: 'Norte'),
-                _PlaceCard(name: 'Barena', zone: 'Sur'),
-              ],
+                {'name': 'Cancha UAO', 'zone': 'Sur'},
+                {'name': 'Gol Cinco Norte', 'zone': 'Norte'},
+                {'name': 'Padel Pro', 'zone': 'Norte'},
+                {'name': 'Barena', 'zone': 'Sur'},
+              ].map((place) {
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedLocation = place['name']),
+                  child: _PlaceCard(
+                    name: place['name']!, 
+                    zone: place['zone']!,
+                    isSelected: _selectedLocation == place['name'], // 👈 Se marca
+                  ),
+                );
+              }).toList(),
             ),
 
             const SizedBox(height: 24),
@@ -196,21 +277,17 @@ class _CrearScreenState extends State<CrearScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            onPressed: () {
-              debugPrint('Nombre: ${nameController.text}');
-              debugPrint('Fecha: $formattedDate');
-              debugPrint('Hora: $formattedTime');
-              debugPrint('Jugadores: $players');
-              debugPrint('Precio: $price');
-            },
-            child: const Text(
-              'CREAR PARTIDO',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+            onPressed: _isLoading ? null : _crearPartido, // 🔹 Conectado a la función
+            child: _isLoading 
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text(
+                  'CREAR PARTIDO',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
           ),
         ),
       ),
@@ -415,25 +492,23 @@ class _SportCard extends StatelessWidget {
   final String title;
   final String emoji;
   final Color color;
+  final bool isSelected; // 👈 Agregado
 
-  const _SportCard({
-    required this.title,
-    required this.emoji,
-    required this.color,
-  });
+  const _SportCard({required this.title, required this.emoji, required this.color, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
+      width: 110,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
+        border: isSelected ? Border.all(color: Colors.white, width: 3) : null, // Borde si se selecciona
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            color.withAlpha(200),
+            isSelected ? color : color.withValues(alpha: 0.5),
             color,
           ],
         ),
@@ -441,15 +516,9 @@ class _SportCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 36)),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(emoji, style: const TextStyle(fontSize: 30)),
+          const SizedBox(height: 4),
+          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -459,11 +528,9 @@ class _SportCard extends StatelessWidget {
 class _PlaceCard extends StatelessWidget {
   final String name;
   final String zone;
+  final bool isSelected; // 👈 Agregado
 
-  const _PlaceCard({
-    required this.name,
-    required this.zone,
-  });
+  const _PlaceCard({required this.name, required this.zone, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -471,34 +538,20 @@ class _PlaceCard extends StatelessWidget {
       width: 158,
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: isSelected ? const Color(0xFF2E7D32).withValues(alpha: 0.1) : Colors.white,
+        border: Border.all(color: isSelected ? const Color(0xFF2E7D32) : const Color(0xFFE5E7EB), width: 2),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.location_on_outlined,
-            size: 18,
-            color: Color(0xFF2E7D32),
-          ),
+          Icon(Icons.location_on_outlined, size: 18, color: isSelected ? const Color(0xFF2E7D32) : Colors.grey),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  zone,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF6A7282),
-                  ),
-                ),
+                Text(name, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF2E7D32) : Colors.black)),
+                Text(zone, style: const TextStyle(fontSize: 12, color: Color(0xFF6A7282))),
               ],
             ),
           ),

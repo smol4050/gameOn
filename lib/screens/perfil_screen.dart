@@ -1,6 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../services/image_service.dart';
+import '../services/auth_service.dart';
+import '../theme/colors.dart';
+import 'login_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -10,256 +19,142 @@ class PerfilScreen extends StatefulWidget {
 }
 
 class _PerfilScreenState extends State<PerfilScreen> {
-  String name = 'Isabella Londoño';
+  String name = 'Cargando...';
   String level = 'NA';
-  String favoriteSport = 'Voley';
-  String sportEmoji = '🏐';
-  File? profileImage;
+  String favoriteSport = 'Cargando...';
+  String? photoUrl;
 
-  final List<String> levels = ['NA', 'Principiante', 'Intermedio', 'Avanzado'];
-  final Map<String, String> sports = {
-    'Pádel': '🎾',
-    'Voley': '🏐',
-    'Fútbol': '⚽',
-    'Tenis': '🎾',
-    'Ultimate': '🥏',
-    'Baloncesto': '🏀',
-  };
+  bool _isLoading = true;
+  bool _isUploading = false;
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
 
-    final pickedImage = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
+  Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
 
-    if (pickedImage != null) {
-      setState(() {
-        profileImage = File(pickedImage.path);
-      });
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists && mounted) {
+        setState(() {
+          name = doc.data()?['name'] ?? 'Usuario';
+          level = doc.data()?['level'] ?? 'NA';
+          favoriteSport =
+              doc.data()?['sport'] ?? 'Voley';
+          photoUrl = doc.data()?['photoUrl'];
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  void _openEditProfile() {
-    String tempLevel = level;
-    String tempSport = favoriteSport;
+  Future<void> _processAndUploadImage() async {
+    final picker = ImagePicker();
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Editar perfil',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
 
-                  Center(
-                    child: GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 48,
-                        backgroundColor: const Color(0xFFE5E7EB),
-                        backgroundImage:
-                            profileImage != null ? FileImage(profileImage!) : null,
-                        child: profileImage == null
-                            ? const Icon(Icons.camera_alt, size: 32)
-                            : null,
-                      ),
-                    ),
-                  ),
+    if (pickedFile == null) return;
 
-                  const SizedBox(height: 24),
+    setState(() => _isUploading = true);
 
-                  const Text('Nivel de juego'),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: tempLevel,
-                    decoration: _inputDecoration(),
-                    items: levels.map((item) {
-                      return DropdownMenuItem(
-                        value: item,
-                        child: Text(item),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setModalState(() {
-                        tempLevel = value!;
-                      });
-                    },
-                  ),
+    try {
+      final tempDir = await getTemporaryDirectory();
 
-                  const SizedBox(height: 16),
+      final targetPath =
+          "${tempDir.path}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg";
 
-                  const Text('Deporte preferido'),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: tempSport,
-                    decoration: _inputDecoration(),
-                    items: sports.keys.map((item) {
-                      return DropdownMenuItem(
-                        value: item,
-                        child: Text('${sports[item]} $item'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setModalState(() {
-                        tempSport = value!;
-                      });
-                    },
-                  ),
+      final XFile? compressedFile =
+          await FlutterImageCompress.compressAndGetFile(
+        pickedFile.path,
+        targetPath,
+        quality: 40,
+        minWidth: 600,
+        minHeight: 600,
+      );
 
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          level = tempLevel;
-                          favoriteSport = tempSport;
-                          sportEmoji = sports[tempSport]!;
-                        });
-
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Guardar cambios',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+      if (compressedFile != null) {
+        final String? url =
+            await ImageService.uploadImage(
+          File(compressedFile.path),
         );
-      },
-    );
-  }
 
-  InputDecoration _inputDecoration() {
-    return InputDecoration(
-      filled: true,
-      fillColor: const Color(0xFFF9FAFB),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-      ),
-    );
+        if (url != null) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(FirebaseAuth
+                  .instance.currentUser!.uid)
+              .update({'photoUrl': url});
+
+          setState(() => photoUrl = url);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error: $e");
+    } finally {
+      setState(() => _isUploading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
+      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.only(bottom: 30),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.arrow_back),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _openEditProfile,
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Editar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              _buildHeader(),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              CircleAvatar(
-                radius: 56,
-                backgroundColor: Colors.white,
-                backgroundImage:
-                    profileImage != null ? FileImage(profileImage!) : null,
-                child: profileImage == null
-                    ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                    : null,
-              ),
+              _buildAvatar(),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               Text(
                 name,
                 style: const TextStyle(
-                  fontSize: 23,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF101727),
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
                 ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Nivel: '),
-                  Text(
-                    '$level 🔥',
-                    style: const TextStyle(
-                      color: Color(0xFFF57C00),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Text('•'),
-                  const SizedBox(width: 14),
-                  const Text('Favorito: '),
-                  Text(
-                    '$favoriteSport $sportEmoji',
-                    style: const TextStyle(
-                      color: Color(0xFF1976D2),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+              _buildBadgeInfo(),
 
-              const SizedBox(height: 28),
-              _activitySection(),
-              const SizedBox(height: 24),
-              _historySection(),
-              const SizedBox(height: 24),
-              _reputationSection(),
-              const SizedBox(height: 24),
-              _settingsSection(),
+              const SizedBox(height: 34),
+
+              _buildStatsSection(),
+
+              const SizedBox(height: 26),
+
+              _buildReputationSection(),
+
+              const SizedBox(height: 26),
+
+              _settingsSection(context),
             ],
           ),
         ),
@@ -267,183 +162,523 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  Widget _activitySection() {
-    return _sectionCard(
-      title: 'Actividad',
-      children: const [
-        _ActivityItem(
-          title: 'Partidos jugados',
-          value: '4',
-          icon: Icons.sports_volleyball,
-        ),
-        _ActivityItem(
-          title: 'Eventos creados',
-          value: '8',
-          icon: Icons.emoji_events_outlined,
-        ),
-        _ActivityItem(
-          title: 'Último partido',
-          value: 'Ayer',
-          icon: Icons.calendar_today,
-        ),
-      ],
-    );
-  }
+  // HEADER
 
-  Widget _historySection() {
-    return _sectionCard(
-      title: 'Historial de Partidos',
-      children: const [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(Icons.check_circle, color: Color(0xFF00A63E)),
-          title: Text(
-            'Voley Playa',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text('Miami Beach'),
-          trailing: Text('Ayer'),
-        ),
-        Center(
-          child: Text(
-            'Ver todos los partidos',
-            style: TextStyle(
-              color: Color(0xFF2E7D32),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _reputationSection() {
-    return _sectionCard(
-      title: 'Reputación',
-      children: const [
-        Text(
-          '4.8',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF101727),
-          ),
-        ),
-        SizedBox(height: 16),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            Chip(label: Text('Buen compañero')),
-            Chip(label: Text('Puntual')),
-            Chip(label: Text('Juego limpio')),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _settingsSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withAlpha(36)),
-      ),
-      child: const Column(
-        children: [
-          ListTile(title: Text('Ayuda'), trailing: Icon(Icons.chevron_right)),
-          Divider(height: 1),
-          ListTile(
-            title: Text('Configuración'),
-            trailing: Icon(Icons.chevron_right),
-          ),
-          Divider(height: 1),
-          ListTile(
-            title: Text(
-              'Cerrar sesión',
-              style: TextStyle(color: Color(0xFFE7000B)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionCard({
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.black.withAlpha(36)),
-          ),
-          child: Column(children: children),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActivityItem extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-
-  const _ActivityItem({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withAlpha(36)),
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        0,
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment:
+            MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(color: Color(0xFF6A7282))),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius:
+                  BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      Colors.black.withValues(
+                    alpha: 0.04,
+                  ),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+            ),
+          ),
+
+          Container(
+            padding:
+                const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius:
+                  BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      Colors.black.withValues(
+                    alpha: 0.05,
+                  ),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.edit_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Editar',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // AVATAR
+
+  Widget _buildAvatar() {
+    return GestureDetector(
+      onTap:
+          _isUploading
+              ? null
+              : _processAndUploadImage,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 130,
+            height: 130,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              border: Border.all(
+                color: Colors.white,
+                width: 5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      Colors.black.withValues(
+                    alpha: 0.06,
+                  ),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
+            ),
+            child: ClipOval(
+              child:
+                  photoUrl != null
+                      ? Image.network(
+                        photoUrl!,
+                        fit: BoxFit.cover,
+                      )
+                      : const Icon(
+                        Icons.person,
+                        size: 70,
+                        color: Colors.grey,
+                      ),
+            ),
+          ),
+
+          if (_isUploading)
+            Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                color:
+                    Colors.black.withValues(
+                  alpha: 0.35,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child:
+                    CircularProgressIndicator(
+                  color: Colors.white,
                 ),
               ),
-            ],
-          ),
-          Icon(icon, color: const Color(0xFF2E7D32)),
+            ),
+
+          Positioned(
+            bottom: 6,
+            right: 6,
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 3,
+                ),
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          )
         ],
+      ),
+    );
+  }
+
+  // BADGES
+
+  Widget _buildBadgeInfo() {
+    return Row(
+      mainAxisAlignment:
+          MainAxisAlignment.center,
+      children: [
+        _badge(
+          'Nivel $level 🔥',
+          Colors.orange,
+        ),
+
+        const SizedBox(width: 12),
+
+        _badge(
+          favoriteSport,
+          Colors.blue,
+        ),
+      ],
+    );
+  }
+
+  Widget _badge(
+    String text,
+    Color color,
+  ) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius:
+            BorderRadius.circular(18),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  // STATS
+
+  Widget _buildStatsSection() {
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 24,
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Actividad',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          _statCard(
+            'Partidos jugados',
+            '27',
+            Icons.sports_soccer,
+          ),
+
+          const SizedBox(height: 16),
+
+          _statCard(
+            'Eventos creados',
+            '8',
+            Icons.event,
+          ),
+
+          const SizedBox(height: 16),
+
+          _lastMatchCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard(
+    String title,
+    String value,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: AppColors.primary
+                  .withValues(alpha: 0.12),
+              borderRadius:
+                  BorderRadius.circular(18),
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.primary,
+            ),
+          ),
+
+          const SizedBox(width: 18),
+
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _lastMatchCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.04,
+            ),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      child: const Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Último partido',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          SizedBox(height: 10),
+
+          Text(
+            'Fútbol • 24 Abril 2026',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // REPUTACIÓN
+
+  Widget _buildReputationSection() {
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 24,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(26),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius:
+              BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: 0.04,
+              ),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            )
+          ],
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Reputación',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            const Text(
+              '4.9',
+              style: TextStyle(
+                fontSize: 52,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _reputationTag(
+                  'Buen compañero',
+                ),
+                _reputationTag(
+                  'Puntual',
+                ),
+                _reputationTag(
+                  'Juego limpio',
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _reputationTag(String text) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius:
+            BorderRadius.circular(18),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  // SETTINGS
+
+  Widget _settingsSection(
+    BuildContext context,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius:
+              BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: 0.04,
+              ),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            )
+          ],
+        ),
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 8,
+          ),
+          onTap: () async {
+            await AuthService().signOut();
+
+            if (!mounted) return;
+
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) =>
+                        const LoginScreen(),
+              ),
+              (r) => false,
+            );
+          },
+          title: const Text(
+            'Cerrar sesión',
+            style: TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w700,
+              fontSize: 17,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.logout_rounded,
+            color: Colors.red,
+          ),
+        ),
       ),
     );
   }

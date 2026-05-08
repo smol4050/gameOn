@@ -12,7 +12,20 @@
           "package_name": "com.example.gameon"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "416742714229-gn2l74obt77sq97sg3v6ugoe9dd4up9h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.gameon",
+            "certificate_hash": "36c895a491037d6c6be1c6f7d97475889e369d05"
+          }
+        },
+        {
+          "client_id": "416742714229-eq1klmf3hd7bhj7cs2pfcpaajd26t73q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAzM3hw6ZYzDzRsnT8xvYRaF7dO3yLrT_Q"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "416742714229-eq1klmf3hd7bhj7cs2pfcpaajd26t73q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

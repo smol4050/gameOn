@@ -1,97 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'confirmar_unirse_screen.dart'; // 🔹 Importamos la pantalla
+import 'confirmar_unirse_screen.dart';
+import '../theme/colors.dart';
+import 'package:intl/intl.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  // 🔹 FUNCIÓN SEEDER PARA POBLAR FIREBASE (Con 6 partidos más)
-  Future<void> _seedDatabase(BuildContext context) async {
-    final mockMatches = [
-      {'title': 'Basket 3x3 Callejero', 'location': 'Parque del Perro', 'date': '29 abr', 'time': '17:00', 'slots': '6/12'},
-      {'title': 'Tenis Dobles (Nivel B)', 'location': 'Club Campestre', 'date': '30 abr', 'time': '08:00', 'slots': '2/4'},
-      {'title': 'Voley Arena Mixto', 'location': 'Canchas Panamericanas', 'date': '01 may', 'time': '16:00', 'slots': '10/12'},
-      {'title': 'Fútbol 5 Femenino', 'location': 'Gol 5, Sur', 'date': '02 may', 'time': '19:00', 'slots': '5/10'},
-      {'title': 'Ultimate Mixto Open', 'location': 'Cancha Blanca, Norte', 'date': '03 may', 'time': '15:00', 'slots': '12/20'},
-      {'title': 'Pádel Nivel Pro', 'location': 'Padel House', 'date': '04 may', 'time': '20:00', 'slots': '1/4'},
-    ];
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-    try {
-      final collection = FirebaseFirestore.instance.collection('matches');
-      for (var match in mockMatches) {
-        await collection.add(match);
-      }
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ ¡Base de datos poblada!', style: TextStyle(color: Colors.white))));
-    } catch (e) {
-      print("Error: $e");
-    }
-  }
+class _HomeScreenState extends State<HomeScreen> {
+  String _filtroActivo = 'Todos';
+
+  final List<Map<String, dynamic>> categorias = [
+    {'title': 'Todos', 'emoji': '🌍'},
+    {'title': 'Fútbol', 'emoji': '⚽'},
+    {'title': 'Baloncesto', 'emoji': '🏀'},
+    {'title': 'Pádel', 'emoji': '🎾'},
+    {'title': 'Tenis', 'emoji': '🎾'},
+    {'title': 'Ultimate', 'emoji': '🥏'},
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
-      bottomNavigationBar: _bottomNav(),
+      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _header(),
-                  const SizedBox(height: 20),
-                  _categories(),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Partidos Disponibles',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF101828)),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 🔹 LISTA DESDE FIREBASE
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance.collection('matches').snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator(color: Color(0xFF2E7D32))));
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text('No hay partidos disponibles.', style: TextStyle(color: Colors.grey))));
-                      }
-
-                      final matches = snapshot.data!.docs;
-                      return Column(
-                        children: matches.map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          return _matchCard(context, data, doc.id);
-                        }).toList(),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-                  _eventBanner(),
-                ],
-              ),
-            ),
-            
-            // 🔹 FLOAT BUTTON PARA SEEDER (Temporal)
-            Positioned(
-              bottom: 60,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: FloatingActionButton(
-                  onPressed: () => _seedDatabase(context),
-                  backgroundColor: const Color(0xFF2E7D32),
-                  shape: const CircleBorder(),
-                  elevation: 4,
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-              ),
+            _buildHeader(),
+            _buildFiltrosHorizontal(),
+            Expanded(
+              child: _buildListaStream(),
             ),
           ],
         ),
@@ -99,82 +41,285 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // 🔹 CARD PARTIDO
-  Widget _matchCard(BuildContext context, Map<String, dynamic> data, String matchId) {
-    final title = data['title'] ?? 'Partido';
-    final location = data['location'] ?? 'Ubicación';
-    final date = data['date'] ?? 'Fecha';
-    final time = data['time'] ?? '--:--';
-    final slots = data['slots'] ?? '0/0';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Colors.white,
-        boxShadow: const [BoxShadow(blurRadius: 10, offset: Offset(0, 4), color: Colors.black12)],
-      ),
+  // HEADER MODERNO
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 10),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Colors.grey[300]),
-            child: const Icon(Icons.sports_basketball, color: Colors.grey),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'GameOn',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Encuentra tu próximo partido',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Expanded(child: Text(location, style: const TextStyle(color: Colors.black87), overflow: TextOverflow.ellipsis)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text('$date • $time', style: const TextStyle(color: Colors.black87)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text('$slots Cupos Libres', style: const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.w600)),
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
               ],
             ),
-          ),
-          // 🔹 NAVEGAMOS A LA CONFIRMACIÓN
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ConfirmarUnirseScreen(matchId: matchId, matchData: data),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.primary,
             ),
-            child: const Text('Ver', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          )
+          ),
         ],
       ),
     );
   }
 
-  // HEADER, CATEGORIES, BANNER, NAVBAR... (Iguales que antes)
-  Widget _header() { return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Game On', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))), Text('Encuentra tu partido', style: TextStyle(color: Color(0xFF1976D2), fontSize: 13))]), Icon(Icons.notifications_none)]); }
-  Widget _categories() { final items = [{'emoji': '🥏', 'title': 'Ultimate', 'color': Colors.teal}, {'emoji': '🎾', 'title': 'Pádel', 'color': Colors.blue}, {'emoji': '⚽', 'title': 'Fútbol', 'color': Colors.green}]; return SizedBox(height: 160, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: items.length, separatorBuilder: (_, __) => const SizedBox(width: 12), itemBuilder: (_, i) { final item = items[i]; return Container(width: 140, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: item['color'] as Color), child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text(item['emoji'] as String, style: const TextStyle(fontSize: 36)), const SizedBox(height: 8), Text(item['title'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))]))); })); }
-  Widget _eventBanner() { return Container(height: 140, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: Colors.blue), child: const Center(child: Text('Eventos y Torneos', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)))); }
-  Widget _bottomNav() { return Container(height: 80, padding: const EdgeInsets.symmetric(horizontal: 24), decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFE5E7EB)))), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [Icon(Icons.home, color: Color(0xFF2E7D32), size: 28), Icon(Icons.calendar_today, color: Colors.grey, size: 28), SizedBox(width: 40), Icon(Icons.emoji_events_outlined, color: Colors.grey, size: 28), Icon(Icons.person_outline, color: Colors.grey, size: 28)])); }
+  // FILTROS HORIZONTALES
+  Widget _buildFiltrosHorizontal() {
+    return SizedBox(
+      height: 95,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: categorias.length,
+        itemBuilder: (context, i) {
+          final cat = categorias[i];
+          final selected = _filtroActivo == cat['title'];
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _filtroActivo = cat['title'];
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 82,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color:
+                    selected ? AppColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    cat['emoji'],
+                    style: const TextStyle(fontSize: 28),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    cat['title'],
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: selected
+                          ? Colors.white
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // STREAM DE FIREBASE
+  Widget _buildListaStream() {
+    Query query =
+        FirebaseFirestore.instance.collection('matches');
+
+    if (_filtroActivo != 'Todos') {
+      query = query.where(
+        'sport',
+        isEqualTo: _filtroActivo,
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: query.snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: AppColors.primary,
+            ),
+          );
+        }
+
+        if (snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text(
+              "No hay partidos para este deporte",
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: snapshot.data!.docs.length,
+          itemBuilder: (context, index) {
+            final doc = snapshot.data!.docs[index];
+
+            final data =
+                doc.data() as Map<String, dynamic>;
+
+            return _buildMatchCard(data, doc.id);
+          },
+        );
+      },
+    );
+  }
+
+  // CARD PREMIUM
+ Widget _buildMatchCard(Map<String, dynamic> data, String docId) {
+    final title = data['title'] ?? 'Partido';
+    final sport = data['sport'] ?? 'Deporte';
+    final location = data['location'] ?? 'Ubicación';
+    
+    // 🔹 Lógica de Cupos (Slots)
+    final int joined = data['joinedSlots'] ?? 0;
+    final int total = data['totalSlots'] ?? 10;
+    final double progress = (joined / total).clamp(0.0, 1.0);
+
+    // 🔹 Formateo de Fecha Seguro (Timestamp a String)
+    String dateStr = 'Fecha pendiente';
+    if (data['date'] != null && data['date'] is Timestamp) {
+      DateTime dateTime = (data['date'] as Timestamp).toDate();
+      dateStr = DateFormat('dd MMMM • hh:mm a', 'es').format(dateTime);
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ConfirmarUnirseScreen(
+              matchId: docId,
+              matchData: data,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 22),
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(Icons.sports_soccer, color: AppColors.primary, size: 30),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                      const SizedBox(height: 4),
+                      Text(sport, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text(dateStr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(location, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14), overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // 🔹 BARRA DE PROGRESO DE CUPOS
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('$joined / $total jugadores', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                    Text('${(progress * 100).toInt()}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: const Color(0xFFF3F4F6),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      progress >= 1.0 ? Colors.red : AppColors.primary
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
