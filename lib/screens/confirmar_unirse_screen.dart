@@ -27,27 +27,50 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     if (mounted) setState(() => _isJoined = doc.exists);
   }
 
-  Future<void> _toggleAction() async {
-    setState(() => _isLoading = true);
-    final user = FirebaseAuth.instance.currentUser;
-    final userAgendaRef = FirebaseFirestore.instance.collection('users').doc(user!.uid).collection('agenda').doc(widget.matchId);
-    final matchRef = FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
+ Future<void> _toggleAction() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return; // Validación de seguridad
 
-    try {
+  setState(() => _isLoading = true);
+
+  final userAgendaRef = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('agenda').doc(widget.matchId);
+  final matchRef = FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
+
+  try {
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot matchSnap = await transaction.get(matchRef);
+      if (!matchSnap.exists) return;
+
       if (_isJoined) {
-        // 🔹 CANCELAR
-        await userAgendaRef.delete();
-        await matchRef.update({'joinedSlots': FieldValue.increment(-1)});
+        // SALIRSE DEL PARTIDO
+        transaction.delete(userAgendaRef);
+        transaction.update(matchRef, {
+          'joinedSlots': FieldValue.increment(-1), // Restamos uno a los unidos
+        });
       } else {
-        // 🔹 UNIRSE
-        await userAgendaRef.set(widget.matchData);
-        await matchRef.update({'joinedSlots': FieldValue.increment(1)});
+        // UNIRSE AL PARTIDO
+        if (matchSnap['joinedSlots'] < matchSnap['totalSlots']) {
+          transaction.set(userAgendaRef, {
+            'matchId': widget.matchId,
+            'title': widget.matchData['title'],
+            'date': widget.matchData['date'], 
+            'sport': widget.matchData['sport'] ?? widget.matchData['category'], // Fallback por si acaso
+            'location': widget.matchData['location'],
+          });
+          transaction.update(matchRef, {
+            'joinedSlots': FieldValue.increment(1), // Sumamos uno a los unidos
+          });
+        }
       }
-      _isJoined = !_isJoined;
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    });
+
+    if (mounted) setState(() => _isJoined = !_isJoined);
+  } catch (e) {
+    debugPrint("Error en la transacción: $e");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {

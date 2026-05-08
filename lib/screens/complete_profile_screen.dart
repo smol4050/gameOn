@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'home_screen.dart';
+import 'main_navigation_screen.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final String uid;
@@ -49,7 +49,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

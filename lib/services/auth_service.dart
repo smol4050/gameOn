@@ -48,11 +48,23 @@ class AuthService {
       User? user = userCredential.user;
 
       if (user != null) {
-        DocumentSnapshot doc = await _firestore.collection('users').doc(user.uid).get();
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        bool isNewUser = !userDoc.exists;
+
+        if (isNewUser) {
+          // Solo si es nuevo, guardamos el nombre de Google inicialmente
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'email': user.email,
+            'name': user.displayName,
+            'photoUrl': user.photoURL,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
         
         return {
           'user': user,
-          'isNewUser': !doc.exists,
+          'isNewUser': isNewUser,
         };
       }
     } catch (e) {
