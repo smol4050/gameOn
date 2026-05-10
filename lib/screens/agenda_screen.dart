@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart'; // <--- AGREGA ESTA LÍNEA
+import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import 'confirmar_unirse_screen.dart';
+import 'chat_list_screen.dart';
 
 class AgendaScreen extends StatelessWidget {
   const AgendaScreen({super.key});
@@ -20,7 +21,7 @@ class AgendaScreen extends StatelessWidget {
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            _buildHeader(context),
 
             Expanded(
               child:
@@ -108,36 +109,59 @@ class AgendaScreen extends StatelessWidget {
     );
   }
 
-  // HEADER PREMIUM
+ // HEADER PREMIUM
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) { // <--- AHORA RECIBE EL CONTEXTO
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        28,
-        24,
-        24,
-      ),
-      child: const Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      child: Row( // <--- AÑADIMOS UN ROW PARA PONER ELEMENTOS LADO A LADO
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Mi Agenda',
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              color: AppColors.primary,
+          // Lado izquierdo: Textos
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mi Agenda',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Tus próximos partidos y eventos',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-
-          SizedBox(height: 6),
-
-          Text(
-            'Tus próximos partidos y eventos',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
+          
+          // Lado derecho: Botón de Chat
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.chat_bubble_outline_rounded,
+                color: AppColors.primary,
+                size: 26,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ChatListScreen(),
+                  ),
+                );
+              },
             ),
           ),
         ],

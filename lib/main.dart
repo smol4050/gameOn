@@ -18,7 +18,7 @@ await initializeDateFormatting('es', null);
 class GameOnApp extends StatelessWidget {
   const GameOnApp({super.key});
 
-  @override
+  @override 
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'GameOn',

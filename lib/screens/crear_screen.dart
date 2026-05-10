@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CrearScreen extends StatefulWidget {
   const CrearScreen({super.key});
@@ -105,7 +106,12 @@ class _CrearScreenState extends State<CrearScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 🔹 COMBINAR FECHA Y HORA EN UN TIMESTAMP
+      // 🔹 1. OBTENER EL USUARIO ACTUAL
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final creatorName = currentUser?.displayName ?? 'Organizador'; // Toma el nombre o pone uno por defecto
+      final creatorId = currentUser?.uid ?? '';
+
+      // 🔹 2. COMBINAR FECHA Y HORA EN UN TIMESTAMP
       final DateTime fullDateTime = DateTime(
         selectedDate!.year,
         selectedDate!.month,
@@ -114,6 +120,7 @@ class _CrearScreenState extends State<CrearScreen> {
         selectedTime!.minute,
       );
 
+      // 🔹 3. GUARDAR EN FIRESTORE
       await FirebaseFirestore.instance.collection('matches').add({
         'title': nameController.text.trim(),
         'sport': _selectedSport,
@@ -123,7 +130,9 @@ class _CrearScreenState extends State<CrearScreen> {
         'totalSlots': players,
         'price': price,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+        'creatorName': creatorName, 
+        'creatorId': creatorId,
+        });
 
       if (!mounted) return;
       Navigator.pop(context);
