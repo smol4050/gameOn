@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class CrearScreen extends StatefulWidget {
   const CrearScreen({super.key});
@@ -12,16 +13,128 @@ class CrearScreen extends StatefulWidget {
 class _CrearScreenState extends State<CrearScreen> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
-  int players = 10; // Empezamos con un número razonable
+  int players = 10;
   int price = 2000;
   bool _isLoading = false;
+  bool _isLoadingVenues = true; // Para saber si estamos descargando canchas
 
-  // 🔹 NUEVAS VARIABLES DE SELECCIÓN
   String? _selectedSport;
   String? _selectedLocation;
+  String? _selectedZone;
+  String _searchQuery = "";
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController priceController = TextEditingController(text: '2000');
+
+  MapboxMap? mapboxMap;
+  PointAnnotationManager? pointAnnotationManager;
+
+  // 🔹 AHORA LA LISTA ESTÁ VACÍA PORQUE SE LLENARÁ DESDE FIREBASE
+  List<Map<String, dynamic>> _venues = [];
+
+  @override
+  void initState() {
+    super.initState();
+    MapboxOptions.setAccessToken("pk.eyJ1Ijoic21vbDQwNTAiLCJhIjoiY21ueXh0djNjMDc3eDJxcG1hdjJ3cHE0eSJ9.zcn7z1InAFd0DwiVFSUTSA");
+    _fetchCanchasDesdeFirebase();
+  }
+
+  // 🔹 LÓGICA MÁGICA: DESCARGA Y SUBIDA AUTOMÁTICA
+  Future<void> _fetchCanchasDesdeFirebase() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('canchas').get();
+
+      if (snapshot.docs.isEmpty) {
+        // Si no hay canchas en Firebase, subimos nuestra lista por defecto
+        await _subirCanchasPorDefecto();
+        // Volvemos a consultar después de subir
+        final newSnapshot = await FirebaseFirestore.instance.collection('canchas').get();
+        setState(() {
+          _venues = newSnapshot.docs.map((doc) => doc.data()).toList();
+          _isLoadingVenues = false;
+        });
+      } else {
+        // Si ya existen, simplemente las cargamos
+        setState(() {
+          _venues = snapshot.docs.map((doc) => doc.data()).toList();
+          _isLoadingVenues = false;
+        });
+      }
+      
+      // Si el mapa ya cargó, actualizamos los pines
+      if (pointAnnotationManager != null) {
+        _updateMapMarkers();
+      }
+    } catch (e) {
+      debugPrint("Error al cargar canchas: $e");
+      setState(() => _isLoadingVenues = false);
+    }
+  }
+
+  // 🚀 FUNCIÓN PARA ABRIR PANTALLA COMPLETA
+  void _abrirMapaCompleto() async {
+    // Navegamos al mapa completo y esperamos que nos devuelva una cancha
+    final selectedVenue = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapaPantallaCompletaScreen(
+          venues: _venues,
+          selectedSport: _selectedSport,
+          selectedZone: _selectedZone,
+        ),
+      ),
+    );
+
+    // Si el usuario eligió una cancha, la actualizamos en el form
+    if (selectedVenue != null) {
+      setState(() {
+        _selectedLocation = selectedVenue['name'];
+      });
+      
+      // Hacemos que el mapa pequeño vuele a esa ubicación para mostrarla
+      mapboxMap?.flyTo(
+        CameraOptions(
+          center: Point(coordinates: Position(selectedVenue['lng'] as num, selectedVenue['lat'] as num)),
+          zoom: 14.5,
+          pitch: 45.0,
+        ),
+        MapAnimationOptions(duration: 1500)
+      );
+    }
+  }
+
+  Future<void> _subirCanchasPorDefecto() async {
+    final List<Map<String, dynamic>> defaultVenues = [
+      {'name': 'EL Monumental Cali', 'sport': 'Fútbol', 'zone': 'Norte', 'lat': 3.4800, 'lng': -76.5150},
+      {'name': 'Fútbol 5 La Primera', 'sport': 'Fútbol', 'zone': 'Norte', 'lat': 3.4750, 'lng': -76.5100},
+      {'name': 'Centro Deportivo Las Palmas', 'sport': 'Fútbol', 'zone': 'Sur', 'lat': 3.3800, 'lng': -76.5350},
+      {'name': 'Complejo Deportivo 5-0', 'sport': 'Fútbol', 'zone': 'Sur', 'lat': 3.3750, 'lng': -76.5300},
+      {'name': 'Pascual Obrero', 'sport': 'Fútbol', 'zone': 'Centro', 'lat': 3.4450, 'lng': -76.5250},
+      {'name': 'Canchas Panamericana', 'sport': 'Fútbol', 'zone': 'Centro', 'lat': 3.4350, 'lng': -76.5350},
+      {'name': 'SAN SIRO Sintéticas', 'sport': 'Fútbol', 'zone': 'Oriente', 'lat': 3.4200, 'lng': -76.4950},
+      {'name': 'Canchas La 14 Oriente', 'sport': 'Fútbol', 'zone': 'Oriente', 'lat': 3.4250, 'lng': -76.4900},
+      {'name': 'Canchas Bellavista Sport', 'sport': 'Fútbol', 'zone': 'Occidente', 'lat': 3.4550, 'lng': -76.5500},
+      {'name': 'Canchas Los Cristales', 'sport': 'Fútbol', 'zone': 'Occidente', 'lat': 3.4450, 'lng': -76.5600},
+      // ULTIMATE AÑADIDO
+      {'name': 'Parque Los Álamos (Público)', 'sport': 'Ultimate', 'zone': 'Norte', 'lat': 3.4930, 'lng': -76.5050},
+      {'name': 'Parque La Cascada (Público)', 'sport': 'Ultimate', 'zone': 'Sur', 'lat': 3.4187, 'lng': -76.5473},
+      {'name': 'Cancha de la 66 (Público)', 'sport': 'Ultimate', 'zone': 'Sur', 'lat': 3.3985, 'lng': -76.5362},
+      {'name': 'Cancha de la 70 (Público)', 'sport': 'Ultimate', 'zone': 'Norte', 'lat': 3.4682, 'lng': -76.4951},
+      {'name': 'Canchas Univalle', 'sport': 'Ultimate', 'zone': 'Sur', 'lat': 3.3766, 'lng': -76.5332},
+      // VÓLEY
+      {'name': 'Coliseo Evangelista Mora', 'sport': 'Vóley', 'zone': 'Centro', 'lat': 3.4300, 'lng': -76.5350},
+      {'name': 'Club Deportivo Oeste Vóley', 'sport': 'Vóley', 'zone': 'Occidente', 'lat': 3.4520, 'lng': -76.5480},
+      {'name': 'Arena Vóley Cali', 'sport': 'Vóley', 'zone': 'Oriente', 'lat': 3.4050, 'lng': -76.4950},
+    ];
+
+    final batch = FirebaseFirestore.instance.batch();
+    for (var venue in defaultVenues) {
+      final docRef = FirebaseFirestore.instance.collection('canchas').doc();
+      batch.set(docRef, venue);
+    }
+    await batch.commit();
+    debugPrint("✅ Canchas subidas a Firebase correctamente");
+  }
 
   @override
   void dispose() {
@@ -30,114 +143,159 @@ class _CrearScreenState extends State<CrearScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-    );
+  bool get _isFormValid => nameController.text.isNotEmpty && selectedDate != null && selectedTime != null && _selectedSport != null && _selectedLocation != null;
 
-    if (pickedDate != null) {
-      setState(() {
-        selectedDate = pickedDate;
+  List<Map<String, dynamic>> get _filteredVenues {
+    return _venues.where((venue) {
+      bool sportMatch = false;
+      if (_selectedSport == null) {
+        sportMatch = true;
+      } else if (_selectedSport == 'Ultimate') {
+        sportMatch = (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol');
+      } else {
+        sportMatch = venue['sport'] == _selectedSport;
+      }
+
+      final zoneMatch = _selectedZone == null || venue['zone'] == _selectedZone;
+      final searchMatch = venue['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      
+      return sportMatch && zoneMatch && searchMatch;
+    }).toList();
+  }
+
+  void _onMapCreated(MapboxMap mapboxMap) {
+    this.mapboxMap = mapboxMap;
+    
+    mapboxMap.setCamera(CameraOptions(
+      center: Point(coordinates: Position(-76.5227, 3.3536)), 
+      zoom: 13.5, 
+      pitch: 45.0,
+      bearing: -17.0
+    ));
+
+    mapboxMap.loadStyleURI(MapboxStyles.MAPBOX_STREETS).then((_) {
+      _add3DBuildings(); 
+      
+      mapboxMap.annotations.createPointAnnotationManager().then((manager) {
+        pointAnnotationManager = manager;
+        
+        pointAnnotationManager!.addOnPointAnnotationClickListener(AnnotationClickListener(
+          onAnnotationClick: (annotation) {
+            final lat = annotation.geometry.coordinates.lat;
+            final lng = annotation.geometry.coordinates.lng;
+            
+            final clickedVenue = _venues.firstWhere((v) => v['lat'] == lat && v['lng'] == lng);
+            setState(() => _selectedLocation = clickedVenue['name']);
+            
+            mapboxMap.flyTo(
+              CameraOptions(
+                center: Point(coordinates: Position(lng, lat)),
+                zoom: 16.5, 
+                pitch: 60.0 
+              ),
+              MapAnimationOptions(duration: 1500) 
+            );
+            return true;
+          }
+        ));
+        
+        if (!_isLoadingVenues) _updateMapMarkers();
       });
+    });
+  }
+
+  Future<void> _add3DBuildings() async {
+    try {
+      await mapboxMap?.style.addLayer(FillExtrusionLayer(
+        id: "3d-buildings",
+        sourceId: "composite",
+        sourceLayer: "building",
+        minZoom: 15.0,
+        filter: ["==", "extrude", "true"],
+        fillExtrusionColor: Colors.grey.toARGB32(), 
+        fillExtrusionOpacity: 0.6,
+        fillExtrusionHeight: 30.0,
+        fillExtrusionBase: 0.0,
+      ));
+    } catch (e) {
+      debugPrint("Error al cargar capa 3D: $e");
     }
+  }
+
+  void _updateMapMarkers() async {
+    if (pointAnnotationManager == null) return;
+    await pointAnnotationManager!.deleteAll();
+
+    List<PointAnnotationOptions> options = _filteredVenues.map((v) {
+      return PointAnnotationOptions(
+        geometry: Point(coordinates: Position(v['lng'] as num, v['lat'] as num)),
+        textField: "📍\n${v['name']}", 
+        textSize: 14.0,
+        textOffset: [0.0, -1.0],
+        textColor: Colors.black.toARGB32(),
+        textHaloColor: Colors.white.toARGB32(),
+        textHaloWidth: 2.0,
+      );
+    }).toList();
+
+    if (options.isNotEmpty) {
+      await pointAnnotationManager!.createMulti(options);
+      
+      if (_filteredVenues.isNotEmpty) {
+        mapboxMap?.flyTo(
+          CameraOptions(
+            center: Point(coordinates: Position(_filteredVenues[0]['lng'] as num, _filteredVenues[0]['lat'] as num)),
+            zoom: 13.5,
+            pitch: 45.0
+          ),
+          MapAnimationOptions(duration: 1200) 
+        );
+      }
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime(2030));
+    if (picked != null) setState(() => selectedDate = picked);
   }
 
   Future<void> _selectTime() async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: selectedTime ?? TimeOfDay.now(),
-    );
-
-    if (pickedTime != null) {
-      setState(() {
-        selectedTime = pickedTime;
-      });
-    }
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (picked != null) setState(() => selectedTime = picked);
   }
 
-  void _changePlayers(int value) {
-    setState(() {
-      players += value;
-      if (players < 0) players = 0;
-    });
-  }
-
-  void _changePrice(int value) {
-    setState(() {
-      price += value;
-      if (price < 0) price = 0;
-      priceController.text = price.toString();
-    });
-  }
-
-  String get formattedDate {
-    if (selectedDate == null) return 'Seleccionar';
-    return '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}';
-  }
-
-  String get formattedTime {
-    if (selectedTime == null) return 'Seleccionar';
-    return selectedTime!.format(context);
-  }
-
-  // 🔹 FUNCIÓN PARA GUARDAR EN FIREBASE
   Future<void> _crearPartido() async {
-    if (nameController.text.isEmpty || 
-        selectedDate == null || 
-        selectedTime == null || 
-        _selectedSport == null || 
-        _selectedLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor completa todos los campos (Nombre, Deporte, Lugar, Fecha y Hora)')),
-      );
-      return;
-    }
-
-    if (players <= 0) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El número de jugadores debe ser mayor a 0')),
-      );
-      return;
-    }
+    if (!_isFormValid) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // 🔹 1. OBTENER EL USUARIO ACTUAL
       final currentUser = FirebaseAuth.instance.currentUser;
-      final creatorName = currentUser?.displayName ?? 'Organizador'; // Toma el nombre o pone uno por defecto
+      final creatorName = currentUser?.displayName ?? 'Organizador';
       final creatorId = currentUser?.uid ?? '';
 
-      // 🔹 2. COMBINAR FECHA Y HORA EN UN TIMESTAMP
       final DateTime fullDateTime = DateTime(
-        selectedDate!.year,
-        selectedDate!.month,
-        selectedDate!.day,
-        selectedTime!.hour,
-        selectedTime!.minute,
+        selectedDate!.year, selectedDate!.month, selectedDate!.day,
+        selectedTime!.hour, selectedTime!.minute,
       );
 
-      // 🔹 3. GUARDAR EN FIRESTORE
       await FirebaseFirestore.instance.collection('matches').add({
         'title': nameController.text.trim(),
         'sport': _selectedSport,
         'location': _selectedLocation,
         'date': Timestamp.fromDate(fullDateTime),
-        'joinedSlots': 0,
+        'joinedSlots': 1, 
         'totalSlots': players,
         'price': price,
         'createdAt': FieldValue.serverTimestamp(),
         'creatorName': creatorName, 
         'creatorId': creatorId,
-        });
+      });
 
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Partido creado con éxito'), backgroundColor: Colors.green),
+        const SnackBar(content: Text('✅ Partido creado y publicado'), backgroundColor: Colors.green),
       );
     } catch (e) {
       debugPrint("Error al crear partido: $e");
@@ -156,16 +314,12 @@ class _CrearScreenState extends State<CrearScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Crear Partido',
-          style: TextStyle(
-            color: Color(0xFF111827),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: const Text('Crear Partido', style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w700)),
         iconTheme: const IconThemeData(color: Color(0xFF111827)),
       ),
-      body: SingleChildScrollView(
+      body: _isLoadingVenues 
+        ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32))) 
+        : SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,395 +329,379 @@ class _CrearScreenState extends State<CrearScreen> {
             _input(),
 
             const SizedBox(height: 24),
-            const Text(
-              'Selecciona el Deporte',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF101727),
-              ),
-            ),
+            _label('Selecciona el Deporte'),
             const SizedBox(height: 12),
-
             SizedBox(
-              height: 120, // Ajusté la altura
+              height: 120,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children: [
-                  'Fútbol', 'Baloncesto', 'Tenis', 'Pádel', 'Ultimate'
-                ].map((sport) {
-                  final emojis = {'Fútbol':'⚽', 'Baloncesto':'🏀', 'Tenis':'🎾', 'Pádel':'🎾', 'Ultimate':'🥏'};
-                  final colors = {'Fútbol':Colors.green, 'Baloncesto':Colors.orange, 'Tenis':Colors.red, 'Pádel':Colors.blue, 'Ultimate':Colors.deepPurple};
-                  
+                children: ['Fútbol', 'Baloncesto', 'Tenis', 'Ultimate', 'Vóley'].map((sport) {
+                  final emojis = {'Fútbol':'⚽', 'Baloncesto':'🏀', 'Tenis':'🎾', 'Ultimate':'🥏', 'Vóley':'🏐'};
+                  final colors = {'Fútbol':Colors.green, 'Baloncesto':Colors.orange, 'Tenis':Colors.red, 'Ultimate':Colors.blue, 'Vóley':Colors.deepPurple};
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedSport = sport),
-                    child: _SportCard(
-                      title: sport, 
-                      emoji: emojis[sport]!, 
-                      color: colors[sport]!,
-                      isSelected: _selectedSport == sport, // 👈 Se marca si está seleccionado
-                    ),
+                    onTap: () {
+                      setState(() {
+                        _selectedSport = sport;
+                        _selectedLocation = null; 
+                      });
+                      _updateMapMarkers(); 
+                    },
+                    child: _SportCard(title: sport, emoji: emojis[sport]!, color: colors[sport]!, isSelected: _selectedSport == sport),
                   );
                 }).toList(),
               ),
             ),
 
             const SizedBox(height: 24),
-            _label('Lugar'),
-            const SizedBox(height: 8),
-            _mapPlaceholder(),
-            const SizedBox(height: 16),
-
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                {'name': 'Cancha UAO', 'zone': 'Sur'},
-                {'name': 'Gol Cinco Norte', 'zone': 'Norte'},
-                {'name': 'Padel Pro', 'zone': 'Norte'},
-                {'name': 'Barena', 'zone': 'Sur'},
-              ].map((place) {
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedLocation = place['name']),
-                  child: _PlaceCard(
-                    name: place['name']!, 
-                    zone: place['zone']!,
-                    isSelected: _selectedLocation == place['name'], // 👈 Se marca
+                _label('Lugar del Partido'),
+                if (_selectedLocation != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                    child: Text(_selectedLocation!, style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
-                );
-              }).toList(),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['Norte', 'Sur', 'Centro', 'Oriente', 'Occidente'].map((zone) {
+                  final isSelected = _selectedZone == zone;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(zone, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+                      selected: isSelected,
+                      selectedColor: const Color(0xFF2E7D32),
+                      backgroundColor: Colors.white,
+                      onSelected: (selected) {
+                        setState(() => _selectedZone = selected ? zone : null);
+                        _updateMapMarkers();
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 🔹 MAPA PEQUEÑO (VISTA PREVIA SEGURA CONTRA GESTOS)
+            GestureDetector(
+              onTap: _abrirMapaCompleto, // Al tocar cualquier parte, se abre completo
+              child: Container(
+                height: 250, 
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE5E7EB), width: 2),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 15)],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    // AbsorbPointer evita el conflicto de scroll con la pantalla principal
+                    AbsorbPointer(
+                      child: MapWidget(
+                        key: const ValueKey("mapboxMap_small"),
+                        styleUri: MapboxStyles.MAPBOX_STREETS,
+                        onMapCreated: (MapboxMap map) {
+                          _onMapCreated(map);
+                          // Escondemos los controles por defecto para que luzca limpio
+                          map.compass.updateSettings(CompassSettings(enabled: false));
+                          map.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
+                        },
+                      ),
+                    ),
+                    Positioned(
+                      top: 15, left: 15, right: 15,
+                      child: Container(
+                        height: 45,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.search, color: Colors.green),
+                            SizedBox(width: 10),
+                            Text('Toca para buscar en pantalla completa...', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 10, right: 10,
+                      child: FloatingActionButton.small(
+                        heroTag: "expandBtn",
+                        backgroundColor: Colors.black87,
+                        onPressed: _abrirMapaCompleto,
+                        child: const Icon(Icons.fullscreen, color: Colors.white),
+                      ),
+                    )
+                  ],
+                ),
+              ),
             ),
 
             const SizedBox(height: 24),
             Row(
               children: [
-                Expanded(
-                  child: _dateBox(
-                    title: 'Fecha',
-                    value: formattedDate,
-                    icon: Icons.calendar_today,
-                    onTap: _selectDate,
-                  ),
-                ),
+                Expanded(child: _dateBox(title: 'Fecha', value: selectedDate == null ? 'Seleccionar' : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}', icon: Icons.calendar_today, onTap: _selectDate)),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: _dateBox(
-                    title: 'Hora',
-                    value: formattedTime,
-                    icon: Icons.access_time,
-                    onTap: _selectTime,
-                  ),
-                ),
+                Expanded(child: _dateBox(title: 'Hora', value: selectedTime == null ? 'Seleccionar' : selectedTime!.format(context), icon: Icons.access_time, onTap: _selectTime)),
               ],
             ),
 
             const SizedBox(height: 24),
             _label('Número de Jugadores'),
-            const SizedBox(height: 8),
             _counterBox(),
 
             const SizedBox(height: 24),
             _label('Precio por Jugador'),
-            const SizedBox(height: 8),
             _priceBox(),
 
-            const SizedBox(height: 100),
+            const SizedBox(height: 80),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
+      bottomNavigationBar: _buildBottomButton(),
+    );
+  }
+
+  // --- WIDGETS DE APOYO ---
+
+  Widget _buildBottomButton() {
+    return Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-        ),
+        decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFE5E7EB)))),
         child: SizedBox(
           height: 58,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2E7D32),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+              disabledBackgroundColor: Colors.grey.shade300,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            onPressed: _isLoading ? null : _crearPartido, // 🔹 Conectado a la función
+            onPressed: (_isLoading || !_isFormValid) ? null : _crearPartido, 
             child: _isLoading 
               ? const CircularProgressIndicator(color: Colors.white)
-              : const Text(
-                  'CREAR PARTIDO',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+              : Text(_isFormValid ? 'CREAR PARTIDO' : 'SELECCIONA LUGAR EN EL MAPA', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
           ),
         ),
-      ),
-    );
+      );
   }
 
-  Widget _label(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF364153),
-      ),
-    );
-  }
+  Widget _label(String text) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF364153))));
 
-  Widget _input() {
-    return Container(
-      height: 54,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: TextField(
-        controller: nameController,
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          hintText: 'Escribe el nombre',
-        ),
-      ),
+  Widget _input() => Container(
+      height: 54, padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE5E7EB)), borderRadius: BorderRadius.circular(14)),
+      child: TextField(controller: nameController, onChanged: (_) => setState(() {}), decoration: const InputDecoration(border: InputBorder.none, hintText: 'Escribe el nombre')),
     );
-  }
 
-  Widget _mapPlaceholder() {
-    return Container(
-      height: 192,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: const Center(
-        child: Icon(Icons.map_outlined, size: 48, color: Colors.grey),
-      ),
-    );
-  }
-
-  Widget _dateBox({
-    required String title,
-    required String value,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Column(
+  Widget _dateBox({required String title, required String value, required IconData icon, required VoidCallback onTap}) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _label(title),
-        const SizedBox(height: 8),
         GestureDetector(
           onTap: onTap,
           child: Container(
-            height: 54,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: Colors.grey),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(color: Color(0xFF99A1AF)),
-                  ),
-                ),
-              ],
-            ),
+            height: 54, padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE5E7EB)), borderRadius: BorderRadius.circular(14)),
+            child: Row(children: [Icon(icon, size: 18, color: Colors.grey), const SizedBox(width: 12), Text(value, style: const TextStyle(fontWeight: FontWeight.w600))]),
           ),
         ),
       ],
     );
-  }
 
-  Widget _counterBox() {
-    return Container(
-      height: 82,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _greenButton(Icons.remove, () => _changePlayers(-1)),
-          const SizedBox(width: 24),
-          Text(
-            '$players',
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(width: 24),
-          _greenButton(Icons.add, () => _changePlayers(1)),
-        ],
+  Widget _counterBox() => Container(
+      height: 70, decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE5E7EB)), borderRadius: BorderRadius.circular(14)),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        _circleBtn(Icons.remove, () => setState(() { players--; if(players<1) players=1; })),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 30), child: Text('$players', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold))),
+        _circleBtn(Icons.add, () => setState(() => players++)),
+      ]),
+    );
+
+  Widget _circleBtn(IconData icon, VoidCallback onTap) => GestureDetector(onTap: onTap, child: Container(width: 40, height: 40, decoration: const BoxDecoration(color: Color(0xFF2E7D32), shape: BoxShape.circle), child: Icon(icon, color: Colors.white, size: 20)));
+
+  Widget _priceBox() => Container(
+      padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE5E7EB)), borderRadius: BorderRadius.circular(14)),
+      child: TextField(
+        controller: priceController, keyboardType: TextInputType.number, textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 28, color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
+        decoration: const InputDecoration(prefixText: '\$ ', suffixText: ' COP', border: InputBorder.none),
+        onChanged: (v) => price = int.tryParse(v) ?? 0,
       ),
     );
-  }
-
-  Widget _greenButton(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xFF2E7D32),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _priceBox() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          TextField(
-            controller: priceController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 36,
-              color: Color(0xFF2E7D32),
-              fontWeight: FontWeight.w700,
-            ),
-            decoration: const InputDecoration(
-              prefixText: '\$ ',
-              suffixText: ' COP',
-              border: InputBorder.none,
-            ),
-            onChanged: (value) {
-              setState(() {
-                price = int.tryParse(value) ?? 0;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _priceButton('-1000', false, () => _changePrice(-1000))),
-              const SizedBox(width: 8),
-              Expanded(child: _priceButton('-100', false, () => _changePrice(-100))),
-              const SizedBox(width: 8),
-              Expanded(child: _priceButton('+100', true, () => _changePrice(100))),
-              const SizedBox(width: 8),
-              Expanded(child: _priceButton('+1000', true, () => _changePrice(1000))),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _priceButton(String text, bool active, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFF2E7D32) : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: active ? const Color(0xFF2E7D32) : const Color(0xFFD1D5DC),
-          ),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: active ? Colors.white : const Color(0xFF364153),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _SportCard extends StatelessWidget {
-  final String title;
-  final String emoji;
-  final Color color;
-  final bool isSelected; // 👈 Agregado
-
+  final String title, emoji; final Color color; final bool isSelected;
   const _SportCard({required this.title, required this.emoji, required this.color, required this.isSelected});
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 110,
-      margin: const EdgeInsets.only(right: 12),
+      width: 100, margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected ? Border.all(color: Colors.white, width: 3) : null, // Borde si se selecciona
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            isSelected ? color : color.withValues(alpha: 0.5),
-            color,
-          ],
-        ),
+        borderRadius: BorderRadius.circular(16),
+        color: isSelected ? color : Colors.white,
+        border: Border.all(color: isSelected ? color : const Color(0xFFE5E7EB), width: 2),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 30)),
-          const SizedBox(height: 4),
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        ],
-      ),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text(emoji, style: const TextStyle(fontSize: 28)),
+        Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black87)),
+      ]),
     );
   }
 }
 
-class _PlaceCard extends StatelessWidget {
-  final String name;
-  final String zone;
-  final bool isSelected; // 👈 Agregado
+class AnnotationClickListener extends OnPointAnnotationClickListener {
+  final bool Function(PointAnnotation) onAnnotationClick;
+  AnnotationClickListener({required this.onAnnotationClick});
+  @override
+  bool onPointAnnotationClick(PointAnnotation annotation) => onAnnotationClick(annotation);
+}
 
-  const _PlaceCard({required this.name, required this.zone, required this.isSelected});
+// =========================================================
+// 🌍 PANTALLA DE MAPA COMPLETO (SIN CONFLICTO DE GESTOS)
+// =========================================================
+class MapaPantallaCompletaScreen extends StatefulWidget {
+  final List<Map<String, dynamic>> venues;
+  final String? selectedSport;
+  final String? selectedZone;
+
+  const MapaPantallaCompletaScreen({super.key, required this.venues, this.selectedSport, this.selectedZone});
+
+  @override
+  State<MapaPantallaCompletaScreen> createState() => _MapaPantallaCompletaScreenState();
+}
+
+class _MapaPantallaCompletaScreenState extends State<MapaPantallaCompletaScreen> {
+  MapboxMap? mapboxMap;
+  PointAnnotationManager? pointAnnotationManager;
+  String _searchQuery = "";
+  final TextEditingController searchController = TextEditingController();
+
+  List<Map<String, dynamic>> get _filteredVenues {
+    return widget.venues.where((venue) {
+      bool sportMatch = widget.selectedSport == null || 
+                       (widget.selectedSport == 'Ultimate' ? (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol') : venue['sport'] == widget.selectedSport);
+      bool zoneMatch = widget.selectedZone == null || venue['zone'] == widget.selectedZone;
+      bool searchMatch = venue['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      return sportMatch && zoneMatch && searchMatch;
+    }).toList();
+  }
+
+  void _onMapCreated(MapboxMap mapboxMap) {
+    this.mapboxMap = mapboxMap;
+    
+    mapboxMap.compass.updateSettings(CompassSettings(enabled: false));
+    mapboxMap.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
+
+    mapboxMap.setCamera(CameraOptions(center: Point(coordinates: Position(-76.5227, 3.3536)), zoom: 13.0, pitch: 45.0));
+
+    mapboxMap.loadStyleURI(MapboxStyles.MAPBOX_STREETS).then((_) {
+      mapboxMap.style.addLayer(FillExtrusionLayer(
+        id: "3d-buildings", sourceId: "composite", sourceLayer: "building",
+        minZoom: 15.0, filter: ["==", "extrude", "true"],
+        fillExtrusionColor: Colors.grey.toARGB32(), fillExtrusionOpacity: 0.6,
+        fillExtrusionHeight: 30.0, fillExtrusionBase: 0.0,
+      ));
+      
+      mapboxMap.annotations.createPointAnnotationManager().then((manager) {
+        pointAnnotationManager = manager;
+        pointAnnotationManager!.addOnPointAnnotationClickListener(AnnotationClickListener(
+          onAnnotationClick: (annotation) {
+            final lat = annotation.geometry.coordinates.lat;
+            final lng = annotation.geometry.coordinates.lng;
+            final clickedVenue = widget.venues.firstWhere((v) => v['lat'] == lat && v['lng'] == lng);
+            
+            // 🔹 DEVOLVEMOS EL RESULTADO AL CERRAR LA PANTALLA
+            Navigator.pop(context, clickedVenue);
+            return true;
+          }
+        ));
+        _updateMapMarkers();
+      });
+    });
+  }
+
+  void _updateMapMarkers() async {
+    if (pointAnnotationManager == null) return;
+    await pointAnnotationManager!.deleteAll();
+
+    List<PointAnnotationOptions> options = _filteredVenues.map((v) {
+      return PointAnnotationOptions(
+        geometry: Point(coordinates: Position(v['lng'] as num, v['lat'] as num)),
+        textField: "📍\n${v['name']}", textSize: 14.0, textOffset: [0.0, -1.0], 
+        textColor: Colors.black.toARGB32(), textHaloColor: Colors.white.toARGB32(), textHaloWidth: 2.0,
+      );
+    }).toList();
+
+    if (options.isNotEmpty) {
+      await pointAnnotationManager!.createMulti(options);
+      if (_filteredVenues.isNotEmpty) {
+        mapboxMap?.flyTo(
+          CameraOptions(
+            center: Point(coordinates: Position(_filteredVenues[0]['lng'] as num, _filteredVenues[0]['lat'] as num)),
+            zoom: 13.5, pitch: 45.0
+          ),
+          MapAnimationOptions(duration: 1200) 
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 158,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF2E7D32).withValues(alpha: 0.1) : Colors.white,
-        border: Border.all(color: isSelected ? const Color(0xFF2E7D32) : const Color(0xFFE5E7EB), width: 2),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
+    return Scaffold(
+      body: Stack(
         children: [
-          Icon(Icons.location_on_outlined, size: 18, color: isSelected ? const Color(0xFF2E7D32) : Colors.grey),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF2E7D32) : Colors.black)),
-                Text(zone, style: const TextStyle(fontSize: 12, color: Color(0xFF6A7282))),
-              ],
+          MapWidget(key: const ValueKey("mapboxMap_fullscreen"), styleUri: MapboxStyles.MAPBOX_STREETS, onMapCreated: _onMapCreated),
+          
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  FloatingActionButton(
+                    heroTag: "backBtn", mini: true, backgroundColor: Colors.white,
+                    child: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () => Navigator.pop(context), 
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 50, padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]),
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: (val) {
+                          setState(() => _searchQuery = val);
+                          _updateMapMarkers();
+                        },
+                        decoration: const InputDecoration(icon: Icon(Icons.search, color: Colors.green), hintText: 'Buscar cancha por nombre...', border: InputBorder.none),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+
+          Positioned(
+            bottom: 30, left: 0, right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(30)),
+                child: const Text("Toca un marcador 📍 para elegir", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+            ),
+          )
         ],
       ),
     );
