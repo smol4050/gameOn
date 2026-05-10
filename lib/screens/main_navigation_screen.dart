@@ -6,14 +6,21 @@ import 'perfil_screen.dart';
 import 'crear_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final int initialIndex;
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex; // 👈 Iniciamos en la pestaña solicitada
+  }
 
   // Lista de pantallas principales
   final List<Widget> _screens = [
@@ -32,10 +39,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 🔹 SOLUCIÓN CRÍTICA AL CRASH: Cambiamos el IndexedStack por la pantalla directa.
-      // Ahora solo carga la pantalla que necesitas, liberando el 75% del trabajo de memoria.
       body: _screens[_selectedIndex],
-
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -58,7 +62,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Lado Izquierdo: Home y Eventos
+              // Lado Izquierdo
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -66,7 +70,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   _navItem(Icons.explore, "Eventos", 1),
                 ],
               ),
-              // Lado Derecho: Agenda y Perfil
+              // Lado Derecho
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -81,7 +85,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  // Widget auxiliar para los íconos de la barra
   Widget _navItem(IconData icon, String label, int index) {
     bool isActive = _selectedIndex == index;
     return MaterialButton(

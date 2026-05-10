@@ -226,12 +226,14 @@ class _CrearScreenState extends State<CrearScreen> {
     if (pointAnnotationManager == null) return;
     await pointAnnotationManager!.deleteAll();
 
-    List<PointAnnotationOptions> options = _filteredVenues.map((v) {
+List<PointAnnotationOptions> options = _filteredVenues.map((v) {
       return PointAnnotationOptions(
         geometry: Point(coordinates: Position(v['lng'] as num, v['lat'] as num)),
-        textField: "📍\n${v['name']}", 
-        textSize: 14.0,
-        textOffset: [0.0, -1.0],
+        iconImage: "marker-15", // 📍 ESTO FUERZA AL MAPA A DIBUJAR UN PIN
+        iconSize: 1.8,          // Tamaño del pin
+        textField: v['name'],   // Texto que saldrá abajo
+        textSize: 13.0,
+        textOffset: [0.0, 1.2], // Ajustamos para que no pise el pin
         textColor: Colors.black.toARGB32(),
         textHaloColor: Colors.white.toARGB32(),
         textHaloWidth: 2.0,
@@ -284,7 +286,7 @@ class _CrearScreenState extends State<CrearScreen> {
         'sport': _selectedSport,
         'location': _selectedLocation,
         'date': Timestamp.fromDate(fullDateTime),
-        'joinedSlots': 1, 
+        'joinedSlots': 0, 
         'totalSlots': players,
         'price': price,
         'createdAt': FieldValue.serverTimestamp(),
@@ -636,8 +638,14 @@ class _MapaPantallaCompletaScreenState extends State<MapaPantallaCompletaScreen>
     List<PointAnnotationOptions> options = _filteredVenues.map((v) {
       return PointAnnotationOptions(
         geometry: Point(coordinates: Position(v['lng'] as num, v['lat'] as num)),
-        textField: "📍\n${v['name']}", textSize: 14.0, textOffset: [0.0, -1.0], 
-        textColor: Colors.black.toARGB32(), textHaloColor: Colors.white.toARGB32(), textHaloWidth: 2.0,
+        iconImage: "marker-15",
+        iconSize: 0.8,
+        textField: v['name'],
+        textSize: 13.0,
+        textOffset: [0.0, 1.2],
+        textColor: Colors.black.toARGB32(),
+        textHaloColor: Colors.white.toARGB32(),
+        textHaloWidth: 2.0,
       );
     }).toList();
 
