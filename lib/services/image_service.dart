@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ImageService {
@@ -15,10 +16,10 @@ class ImageService {
       if (response.statusCode == 200) {
         final responseData = await response.stream.bytesToString();
         final jsonResult = jsonDecode(responseData);
-        return jsonResult['data']['url']; 
+        return jsonResult['data']['url'];
       }
     } catch (e) {
-      print("Error subiendo imagen: $e");
+      debugPrint("Error subiendo imagen: $e");
     }
     return null;
   }

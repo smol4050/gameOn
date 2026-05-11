@@ -17,24 +17,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Map<String, dynamic>> categorias = [
     {'title': 'Todos', 'emoji': '🌍'},
-    {'title': 'Fútbol', 'emoji': '⚽'},
+    {'title': 'Futbol', 'emoji': '⚽'},
     {'title': 'Baloncesto', 'emoji': '🏀'},
-    {'title': 'Pádel', 'emoji': '🎾'},
+    {'title': 'Padel', 'emoji': '🎾'},
     {'title': 'Tenis', 'emoji': '🎾'},
     {'title': 'Ultimate', 'emoji': '🥏'},
   ];
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final pagePadding = screenWidth * 0.055;
+    final titleSize = (screenWidth * 0.085).clamp(26.0, 34.0);
+    final subtitleSize = (screenWidth * 0.038).clamp(13.0, 16.0);
+    final filterHeight = (screenHeight * 0.115).clamp(82.0, 104.0);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildFiltrosHorizontal(),
+            _buildHeader(
+              screenWidth: screenWidth,
+              screenHeight: screenHeight,
+              padding: pagePadding,
+              titleSize: titleSize,
+              subtitleSize: subtitleSize,
+            ),
+            _buildFiltrosHorizontal(
+              screenWidth: screenWidth,
+              screenHeight: screenHeight,
+              height: filterHeight,
+            ),
             Expanded(
-              child: _buildListaStream(),
+              child: _buildListaStream(
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
+                padding: pagePadding,
+              ),
             ),
           ],
         ),
@@ -42,56 +64,72 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // HEADER MODERNO
-  Widget _buildHeader() {
+  Widget _buildHeader({
+    required double screenWidth,
+    required double screenHeight,
+    required double padding,
+    required double titleSize,
+    required double subtitleSize,
+  }) {
+    final iconBox = (screenWidth * 0.135).clamp(48.0, 58.0);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 10),
+      padding: EdgeInsets.fromLTRB(
+          padding, screenHeight * 0.028, padding, screenHeight * 0.012),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'GameOn',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'GameOn',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Encuentra tu próximo partido',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
+                SizedBox(height: screenHeight * 0.005),
+                Text(
+                  'Encuentra tu proximo partido',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: subtitleSize,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          SizedBox(width: screenWidth * 0.03),
           GestureDetector(
             onTap: () => Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (_) => const NotificationsScreen())
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
             ),
             child: Container(
-              width: 54,
-              height: 54,
+              width: iconBox,
+              height: iconBox,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(screenWidth * 0.045),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    blurRadius: screenWidth * 0.025,
+                    offset: Offset(0, screenHeight * 0.005),
                   )
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.notifications_none_rounded,
                 color: AppColors.primary,
+                size: iconBox * 0.48,
               ),
             ),
           ),
@@ -100,17 +138,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // FILTROS HORIZONTALES
-  Widget _buildFiltrosHorizontal() {
+  Widget _buildFiltrosHorizontal({
+    required double screenWidth,
+    required double screenHeight,
+    required double height,
+  }) {
     return SizedBox(
-      height: 95,
+      height: height,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
         scrollDirection: Axis.horizontal,
         itemCount: categorias.length,
         itemBuilder: (context, i) {
           final cat = categorias[i];
           final selected = _filtroActivo == cat['title'];
+          final cardWidth = (screenWidth * 0.205).clamp(74.0, 92.0);
 
           return GestureDetector(
             onTap: () {
@@ -120,17 +162,16 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              width: 82,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              width: cardWidth,
+              margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.018),
               decoration: BoxDecoration(
-                color:
-                    selected ? AppColors.primary : Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                color: selected ? AppColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(screenWidth * 0.06),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    blurRadius: screenWidth * 0.025,
+                    offset: Offset(0, screenHeight * 0.005),
                   )
                 ],
               ),
@@ -139,17 +180,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     cat['emoji'],
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    cat['title'],
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: selected
-                          ? Colors.white
-                          : AppColors.textPrimary,
+                        fontSize: (screenWidth * 0.07).clamp(22.0, 30.0)),
+                  ),
+                  SizedBox(height: screenHeight * 0.009),
+                  Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+                    child: Text(
+                      cat['title'],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                        color: selected ? Colors.white : AppColors.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -161,68 +207,74 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // STREAM DE FIREBASE
-  Widget _buildListaStream() {
-    Query query =
-        FirebaseFirestore.instance.collection('matches');
+  Widget _buildListaStream({
+    required double screenWidth,
+    required double screenHeight,
+    required double padding,
+  }) {
+    Query query = FirebaseFirestore.instance.collection('matches');
 
     if (_filtroActivo != 'Todos') {
-      query = query.where(
-        'sport',
-        isEqualTo: _filtroActivo,
-      );
+      query = query.where('sport', isEqualTo: _filtroActivo);
     }
 
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text('No pudimos cargar los partidos.'));
+        }
+
         if (!snapshot.hasData) {
           return const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primary,
-            ),
+            child: CircularProgressIndicator(color: AppColors.primary),
           );
         }
 
         if (snapshot.data!.docs.isEmpty) {
-          return const Center(
-            child: Text(
-              "No hay partidos para este deporte",
-            ),
-          );
+          return const Center(child: Text('No hay partidos para este deporte'));
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(padding),
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
             final doc = snapshot.data!.docs[index];
+            final rawData = doc.data();
+            if (rawData is! Map<String, dynamic>) {
+              return const SizedBox.shrink();
+            }
 
-            final data =
-                doc.data() as Map<String, dynamic>;
-
-            return _buildMatchCard(data, doc.id);
+            return _buildMatchCard(
+              rawData,
+              doc.id,
+              screenWidth: screenWidth,
+              screenHeight: screenHeight,
+            );
           },
         );
       },
     );
   }
 
-  // CARD PREMIUM
- Widget _buildMatchCard(Map<String, dynamic> data, String docId) {
-    final title = data['title'] ?? 'Partido';
-    final sport = data['sport'] ?? 'Deporte';
-    final location = data['location'] ?? 'Ubicación';
-    
-    // 🔹 Lógica de Cupos (Slots)
-    final int joined = data['joinedSlots'] ?? 0;
-    final int total = data['totalSlots'] ?? 10;
-    final double progress = (joined / total).clamp(0.0, 1.0);
+  Widget _buildMatchCard(
+    Map<String, dynamic> data,
+    String docId, {
+    required double screenWidth,
+    required double screenHeight,
+  }) {
+    final title = data['title']?.toString() ?? 'Partido';
+    final sport = data['sport']?.toString() ?? 'Deporte';
+    final location = data['location']?.toString() ?? 'Ubicacion';
+    final joined = (data['joinedSlots'] as num?)?.toInt() ?? 0;
+    final total = ((data['totalSlots'] as num?)?.toInt() ?? 10).clamp(1, 9999);
+    final progress = (joined / total).clamp(0.0, 1.0);
+    final cardPadding = screenWidth * 0.055;
+    final iconSize = (screenWidth * 0.145).clamp(50.0, 64.0);
 
-    // 🔹 Formateo de Fecha Seguro (Timestamp a String)
     String dateStr = 'Fecha pendiente';
-    if (data['date'] != null && data['date'] is Timestamp) {
-      DateTime dateTime = (data['date'] as Timestamp).toDate();
+    if (data['date'] is Timestamp) {
+      final dateTime = (data['date'] as Timestamp).toDate();
       dateStr = DateFormat('dd MMMM • hh:mm a', 'es').format(dateTime);
     }
 
@@ -239,16 +291,16 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 22),
-        padding: const EdgeInsets.all(22),
+        margin: EdgeInsets.only(bottom: screenHeight * 0.026),
+        padding: EdgeInsets.all(cardPadding),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(screenWidth * 0.07),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
+              blurRadius: screenWidth * 0.035,
+              offset: Offset(0, screenHeight * 0.01),
             ),
           ],
         ),
@@ -258,67 +310,120 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               children: [
                 Container(
-                  width: 58,
-                  height: 58,
+                  width: iconSize,
+                  height: iconSize,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.045),
                   ),
-                  child: const Icon(Icons.sports_soccer, color: AppColors.primary, size: 30),
+                  child: Icon(
+                    Icons.sports_soccer,
+                    color: AppColors.primary,
+                    size: iconSize * 0.52,
+                  ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: screenWidth * 0.04),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-                      const SizedBox(height: 4),
-                      Text(sport, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: (screenWidth * 0.05).clamp(17.0, 21.0),
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.005),
+                      Text(
+                        sport,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.024),
             Row(
               children: [
-                const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(dateStr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
+                Icon(Icons.calendar_today_rounded,
+                    size: screenWidth * 0.04, color: AppColors.primary),
+                SizedBox(width: screenWidth * 0.02),
                 Expanded(
-                  child: Text(location, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14), overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    dateStr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            
-            // 🔹 BARRA DE PROGRESO DE CUPOS
+            SizedBox(height: screenHeight * 0.012),
+            Row(
+              children: [
+                Icon(Icons.location_on_outlined,
+                    size: screenWidth * 0.045, color: AppColors.primary),
+                SizedBox(width: screenWidth * 0.02),
+                Expanded(
+                  child: Text(
+                    location,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: screenHeight * 0.024),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('$joined / $total jugadores', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                    Text('${(progress * 100).toInt()}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    Flexible(
+                      child: Text(
+                        '$joined / $total jugadores',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${(progress * 100).toInt()}%',
+                      style: TextStyle(
+                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: screenHeight * 0.01),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
                   child: LinearProgressIndicator(
                     value: progress,
-                    minHeight: 8,
+                    minHeight: screenHeight * 0.01,
                     backgroundColor: const Color(0xFFF3F4F6),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      progress >= 1.0 ? Colors.red : AppColors.primary
+                      progress >= 1.0 ? Colors.red : AppColors.primary,
                     ),
                   ),
                 ),

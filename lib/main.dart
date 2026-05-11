@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'screens/loading_screen.dart';
+import 'screens/global_notification_wrapper.dart';
 import 'theme/colors.dart';
 
 void main() async {
@@ -11,14 +12,14 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-await initializeDateFormatting('es', null);
+  await initializeDateFormatting('es', null);
   runApp(const GameOnApp());
 }
 
 class GameOnApp extends StatelessWidget {
   const GameOnApp({super.key});
 
-  @override 
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'GameOn',
@@ -29,7 +30,7 @@ class GameOnApp extends StatelessWidget {
         fontFamily: 'Inter',
         useMaterial3: true,
       ),
-      home: const LoadingScreen(),
+      home: const GlobalNotificationWrapper(child: LoadingScreen()),
     );
   }
 }

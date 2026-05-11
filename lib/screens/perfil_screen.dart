@@ -36,22 +36,30 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null) {
+    if (user == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
-      if (doc.exists && mounted) {
+      if (mounted) {
+        final data = doc.data();
         setState(() {
-          name = doc.data()?['name'] ?? 'Usuario';
-          level = doc.data()?['level'] ?? 'NA';
-          favoriteSport =
-              doc.data()?['sport'] ?? 'Voley';
-          photoUrl = doc.data()?['photoUrl'];
+          name = data?['name'] ?? user.displayName ?? 'Usuario';
+          level = data?['level'] ?? 'NA';
+          favoriteSport = data?['sport'] ?? 'Voley';
+          photoUrl = data?['photoUrl'] ?? user.photoURL;
           _isLoading = false;
         });
       }
+    } catch (e) {
+      debugPrint('Error cargando perfil: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -82,25 +90,32 @@ class _PerfilScreenState extends State<PerfilScreen> {
       );
 
       if (compressedFile != null) {
-        final String? url =
-            await ImageService.uploadImage(
+        final String? url = await ImageService.uploadImage(
           File(compressedFile.path),
         );
 
         if (url != null) {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser == null) return;
           await FirebaseFirestore.instance
               .collection('users')
-              .doc(FirebaseAuth
-                  .instance.currentUser!.uid)
+              .doc(currentUser.uid)
               .update({'photoUrl': url});
 
-          setState(() => photoUrl = url);
+          if (mounted) setState(() => photoUrl = url);
         }
       }
     } catch (e) {
       debugPrint("Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('No pudimos actualizar la foto: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
@@ -124,13 +139,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
           child: Column(
             children: [
               _buildHeader(),
-
               const SizedBox(height: 20),
-
               _buildAvatar(),
-
               const SizedBox(height: 20),
-
               Text(
                 name,
                 style: const TextStyle(
@@ -139,21 +150,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   color: AppColors.primary,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               _buildBadgeInfo(),
-
               const SizedBox(height: 34),
-
               _buildStatsSection(),
-
               const SizedBox(height: 26),
-
               _buildReputationSection(),
-
               const SizedBox(height: 26),
-
               _settingsSection(context),
             ],
           ),
@@ -173,20 +176,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
         0,
       ),
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
             width: 50,
             height: 50,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius:
-                  BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      Colors.black.withValues(
+                  color: Colors.black.withValues(
                     alpha: 0.04,
                   ),
                   blurRadius: 10,
@@ -199,21 +199,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
               size: 18,
             ),
           ),
-
           Container(
-            padding:
-                const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 12,
             ),
             decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius:
-                  BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      Colors.black.withValues(
+                  color: Colors.black.withValues(
                     alpha: 0.05,
                   ),
                   blurRadius: 10,
@@ -248,10 +244,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Widget _buildAvatar() {
     return GestureDetector(
-      onTap:
-          _isUploading
-              ? null
-              : _processAndUploadImage,
+      onTap: _isUploading ? null : _processAndUploadImage,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -267,8 +260,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      Colors.black.withValues(
+                  color: Colors.black.withValues(
                     alpha: 0.06,
                   ),
                   blurRadius: 20,
@@ -277,39 +269,34 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ],
             ),
             child: ClipOval(
-              child:
-                  photoUrl != null
-                      ? Image.network(
-                        photoUrl!,
-                        fit: BoxFit.cover,
-                      )
-                      : const Icon(
-                        Icons.person,
-                        size: 70,
-                        color: Colors.grey,
-                      ),
+              child: photoUrl != null
+                  ? Image.network(
+                      photoUrl!,
+                      fit: BoxFit.cover,
+                    )
+                  : const Icon(
+                      Icons.person,
+                      size: 70,
+                      color: Colors.grey,
+                    ),
             ),
           ),
-
           if (_isUploading)
             Container(
               width: 130,
               height: 130,
               decoration: BoxDecoration(
-                color:
-                    Colors.black.withValues(
+                color: Colors.black.withValues(
                   alpha: 0.35,
                 ),
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child:
-                    CircularProgressIndicator(
+                child: CircularProgressIndicator(
                   color: Colors.white,
                 ),
               ),
             ),
-
           Positioned(
             bottom: 6,
             right: 6,
@@ -340,16 +327,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Widget _buildBadgeInfo() {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _badge(
           'Nivel $level 🔥',
           Colors.orange,
         ),
-
         const SizedBox(width: 12),
-
         _badge(
           favoriteSport,
           Colors.blue,
@@ -363,15 +347,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
     Color color,
   ) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 18,
         vertical: 10,
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius:
-            BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Text(
         text,
@@ -387,13 +369,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Widget _buildStatsSection() {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 24,
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Actividad',
@@ -402,25 +382,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 18),
-
           _statCard(
             'Partidos jugados',
             '27',
             Icons.sports_soccer,
           ),
-
           const SizedBox(height: 16),
-
           _statCard(
             'Eventos creados',
             '8',
             Icons.event,
           ),
-
           const SizedBox(height: 16),
-
           _lastMatchCard(),
         ],
       ),
@@ -436,8 +410,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(
@@ -454,19 +427,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
             width: 58,
             height: 58,
             decoration: BoxDecoration(
-              color: AppColors.primary
-                  .withValues(alpha: 0.12),
-              borderRadius:
-                  BorderRadius.circular(18),
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
               icon,
               color: AppColors.primary,
             ),
           ),
-
           const SizedBox(width: 18),
-
           Expanded(
             child: Text(
               title,
@@ -476,7 +445,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
             ),
           ),
-
           Text(
             value,
             style: const TextStyle(
@@ -496,8 +464,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(
@@ -509,8 +476,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ],
       ),
       child: const Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Último partido',
@@ -519,9 +485,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               fontWeight: FontWeight.w700,
             ),
           ),
-
           SizedBox(height: 10),
-
           Text(
             'Fútbol • 24 Abril 2026',
             style: TextStyle(
@@ -537,8 +501,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Widget _buildReputationSection() {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 24,
       ),
       child: Container(
@@ -546,8 +509,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         padding: const EdgeInsets.all(26),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius:
-              BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
@@ -567,9 +529,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-
             const SizedBox(height: 18),
-
             const Text(
               '4.9',
               style: TextStyle(
@@ -578,9 +538,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 color: AppColors.primary,
               ),
             ),
-
             const SizedBox(height: 20),
-
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -604,15 +562,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Widget _reputationTag(String text) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 18,
         vertical: 12,
       ),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius:
-            BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Text(
         text,
@@ -633,8 +589,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius:
-              BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
@@ -646,22 +601,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ],
         ),
         child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(
+          contentPadding: const EdgeInsets.symmetric(
             horizontal: 24,
             vertical: 8,
           ),
           onTap: () async {
             await AuthService().signOut();
 
-            if (!mounted) return;
+            if (!context.mounted) return;
 
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder:
-                    (_) =>
-                        const LoginScreen(),
+                builder: (_) => const LoginScreen(),
               ),
               (r) => false,
             );

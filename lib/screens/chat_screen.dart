@@ -2,21 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../theme/colors.dart'; // Ajusta la ruta a tus colores
+import '../theme/colors.dart';
 
-// ==========================================
-// 1. TU COMPONENTE MESSAGE BUBBLE
-// ==========================================
 class MessageBubble extends StatelessWidget {
   final bool isMe;
   final String message;
   final String time;
+  final double screenWidth;
+  final double screenHeight;
 
   const MessageBubble({
     super.key,
     required this.isMe,
     required this.message,
     required this.time,
+    required this.screenWidth,
+    required this.screenHeight,
   });
 
   @override
@@ -24,29 +25,25 @@ class MessageBubble extends StatelessWidget {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.72,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+        margin: EdgeInsets.only(bottom: screenHeight * 0.016),
+        constraints: BoxConstraints(maxWidth: screenWidth * 0.72),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: screenHeight * 0.014,
         ),
         decoration: BoxDecoration(
           gradient: isMe
               ? const LinearGradient(
-                  colors: [
-                    Color(0xFF7B61FF),
-                    Color(0xFF5B8CFF),
-                  ],
-                )
+                  colors: [Color(0xFF7B61FF), Color(0xFF5B8CFF)])
               : null,
           color: isMe ? null : const Color(0xFF232734),
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isMe ? 20 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 20),
+            topLeft: Radius.circular(screenWidth * 0.05),
+            topRight: Radius.circular(screenWidth * 0.05),
+            bottomLeft:
+                Radius.circular(isMe ? screenWidth * 0.05 : screenWidth * 0.01),
+            bottomRight:
+                Radius.circular(isMe ? screenWidth * 0.01 : screenWidth * 0.05),
           ),
         ),
         child: Column(
@@ -54,21 +51,21 @@ class MessageBubble extends StatelessWidget {
           children: [
             Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 15,
+                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
                 height: 1.4,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: screenHeight * 0.007),
             Align(
               alignment: Alignment.bottomRight,
               child: Text(
                 time,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 11,
+                  fontSize: (screenWidth * 0.028).clamp(10.0, 12.0),
                 ),
               ),
             ),
@@ -79,14 +76,11 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
-// ==========================================
-// 2. PANTALLA PRINCIPAL DEL CHAT (1 a 1)
-// ==========================================
 class ChatScreen extends StatefulWidget {
   static String? activeChatId;
 
-  final String otherUserEmail; // El email de la persona con la que chateas
-  final String otherUserName; // Nombre para mostrar en el AppBar
+  final String otherUserEmail;
+  final String otherUserName;
 
   const ChatScreen({
     super.key,
@@ -101,93 +95,125 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final currentUser = FirebaseAuth.instance.currentUser;
-  
+
   late String chatId;
+  bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
-    // Generamos un ID único combinando los emails alfabéticamente
-    final emails = [currentUser?.email ?? '', widget.otherUserEmail];
-    emails.sort(); 
-    chatId = emails.join('_'); // Ejemplo: a@gmail.com_b@gmail.com
-    
-    ChatScreen.activeChatId = chatId; // Registramos que estamos en este chat
+    final emails = [currentUser?.email ?? '', widget.otherUserEmail]..sort();
+    chatId = emails.join('_');
+    ChatScreen.activeChatId = chatId;
   }
 
   @override
   void dispose() {
-    ChatScreen.activeChatId = null; // Limpiamos al salir
+    ChatScreen.activeChatId = null;
     _messageController.dispose();
     super.dispose();
   }
 
-  void _sendMessage() async {
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty || currentUser == null) return;
+    final senderEmail = currentUser?.email;
+    if (text.isEmpty ||
+        currentUser == null ||
+        senderEmail == null ||
+        _isSending) {
+      return;
+    }
 
-    _messageController.clear(); 
+    setState(() => _isSending = true);
+    _messageController.clear();
 
-    // 1. Guardamos el mensaje en el chat combinado
-    await FirebaseFirestore.instance.collection('chats').doc(chatId).set({
-      'participants': [currentUser!.email, widget.otherUserEmail],
-      'lastMessage': text,
-      'lastMessageTime': FieldValue.serverTimestamp(),
-      'userNames': {
-        currentUser!.email: currentUser!.displayName ?? 'Usuario',
-        widget.otherUserEmail: widget.otherUserName,
-      }
-    }, SetOptions(merge: true));
+    try {
+      final chatRef =
+          FirebaseFirestore.instance.collection('chats').doc(chatId);
 
-    // 2. Buscamos el ID del otro usuario basado en su email para enviarle la notificación
-    final userQuery = await FirebaseFirestore.instance
-        .collection('users')
-        .where('email', isEqualTo: widget.otherUserEmail)
-        .limit(1)
-        .get();
-
-    if (userQuery.docs.isNotEmpty) {
-      final otherUserId = userQuery.docs.first.id;
-      final myName = currentUser!.displayName ?? 'Un usuario';
-
-      // 3. Le enviamos la notificación
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(otherUserId)
-          .collection('notifications')
-          .add({
-        'title': 'Nuevo mensaje de $myName',
-        'message': text,
-        'date': FieldValue.serverTimestamp(),
-        'type': 'chat', // Clave para el filtro del Wrapper
-        'chatId': chatId, // El ID del chat para silenciarlo si está abierto
+      await chatRef.collection('messages').add({
+        'text': text,
+        'senderEmail': senderEmail,
+        'timestamp': FieldValue.serverTimestamp(),
       });
+
+      await chatRef.set({
+        'participants': [senderEmail, widget.otherUserEmail],
+        'lastMessage': text,
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'userNames': {
+          senderEmail: currentUser?.displayName ?? 'Usuario',
+          widget.otherUserEmail: widget.otherUserName,
+        }
+      }, SetOptions(merge: true));
+
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: widget.otherUserEmail)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        final otherUserId = userQuery.docs.first.id;
+        final myName = currentUser?.displayName ?? 'Un usuario';
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(otherUserId)
+            .collection('notifications')
+            .add({
+          'title': 'Nuevo mensaje de $myName',
+          'message': text,
+          'date': FieldValue.serverTimestamp(),
+          'type': 'chat',
+          'chatId': chatId,
+          'read': false,
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _messageController.text = text;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('No pudimos enviar el mensaje: $e'),
+            backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final inputPadding = screenWidth * 0.04;
+    final inputHeight = (screenHeight * 0.058).clamp(46.0, 56.0);
+
     return Scaffold(
       backgroundColor: const Color(0xFF181A20),
       appBar: AppBar(
         backgroundColor: const Color(0xFF181A20),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.otherUserName,
-          style: const TextStyle(
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: (screenWidth * 0.045).clamp(16.0, 20.0),
           ),
         ),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          // ZONA DE MENSAJES
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -197,14 +223,23 @@ class _ChatScreenState extends State<ChatScreen> {
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('No pudimos cargar el chat.',
+                        style: TextStyle(color: Colors.grey)),
+                  );
+                }
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                  return const Center(
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary));
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(
                     child: Text(
-                      'No hay mensajes aún. ¡Di hola!',
+                      'No hay mensajes aun. Di hola!',
                       style: TextStyle(color: Colors.grey),
                     ),
                   );
@@ -213,75 +248,85 @@ class _ChatScreenState extends State<ChatScreen> {
                 final messages = snapshot.data!.docs;
 
                 return ListView.builder(
-                  reverse: true, 
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  reverse: true,
+                  padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.024),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    final data = messages[index].data() as Map<String, dynamic>;
-                    // Comparamos usando el email
-                    final bool isMe = data['senderEmail'] == currentUser?.email;
-                    final text = data['text'] ?? '';
-                    
+                    final rawData = messages[index].data();
+                    if (rawData is! Map<String, dynamic>) {
+                      return const SizedBox.shrink();
+                    }
+                    final isMe = rawData['senderEmail'] == currentUser?.email;
+                    final text = rawData['text']?.toString() ?? '';
+
                     String timeStr = '';
-                    if (data['timestamp'] != null) {
-                      final date = (data['timestamp'] as Timestamp).toDate();
-                      timeStr = DateFormat('HH:mm').format(date);
+                    final timestamp = rawData['timestamp'];
+                    if (timestamp is Timestamp) {
+                      timeStr = DateFormat('HH:mm').format(timestamp.toDate());
                     }
 
                     return MessageBubble(
                       isMe: isMe,
                       message: text,
                       time: timeStr,
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
                     );
                   },
                 );
               },
             ),
           ),
-
-          // ZONA DE INPUT
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(
+                horizontal: inputPadding, vertical: screenHeight * 0.014),
             decoration: BoxDecoration(
               color: const Color(0xFF232734),
               border: Border(
-                top: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
-              ),
+                  top: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
             ),
             child: SafeArea(
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
+                      constraints: BoxConstraints(minHeight: inputHeight),
                       decoration: BoxDecoration(
                         color: const Color(0xFF181A20),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.06),
                       ),
                       child: TextField(
                         controller: _messageController,
                         style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
+                        minLines: 1,
+                        maxLines: 4,
+                        decoration: InputDecoration(
                           hintText: 'Escribe un mensaje...',
-                          hintStyle: TextStyle(color: Colors.grey),
+                          hintStyle: const TextStyle(color: Colors.grey),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.05,
+                            vertical: inputHeight * 0.26,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: screenWidth * 0.03),
                   GestureDetector(
-                    onTap: _sendMessage,
+                    onTap: _isSending ? null : _sendMessage,
                     child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: const BoxDecoration(
+                      padding: EdgeInsets.all(screenWidth * 0.035),
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.primary,
+                        color: _isSending ? Colors.grey : AppColors.primary,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.send_rounded,
                         color: Colors.white,
-                        size: 20,
+                        size: screenWidth * 0.05,
                       ),
                     ),
                   ),

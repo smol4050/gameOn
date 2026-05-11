@@ -10,89 +10,110 @@ class ChatListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final screenWidth = size.width;
+    final screenHeight = size.height;
     final currentUser = FirebaseAuth.instance.currentUser;
+    final currentEmail = currentUser?.email;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Mismo fondo claro que la Agenda
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Mensajes',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w800,
-            fontSize: 22,
+            fontSize: (screenWidth * 0.055).clamp(18.0, 23.0),
           ),
         ),
         centerTitle: true,
       ),
-      body: currentUser == null
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+      body: currentEmail == null
+          ? const Center(child: Text('Inicia sesion para ver tus mensajes.'))
           : StreamBuilder<QuerySnapshot>(
-              // Buscamos los chats donde yo sea participante
               stream: FirebaseFirestore.instance
                   .collection('chats')
-                  .where('participants', arrayContains: currentUser.email)
+                  .where('participants', arrayContains: currentEmail)
                   .snapshots(),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                      child: Text('No pudimos cargar tus chats.'));
+                }
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                  return const Center(
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary));
                 }
-
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(screenWidth, screenHeight);
                 }
 
-                // Extraemos los documentos y LOS ORDENAMOS por el mensaje más reciente
-                final docs = snapshot.data!.docs;
+                final docs = snapshot.data!.docs.toList();
                 docs.sort((a, b) {
-                  final dataA = a.data() as Map<String, dynamic>;
-                  final dataB = b.data() as Map<String, dynamic>;
+                  final dataA = a.data() as Map<String, dynamic>? ?? {};
+                  final dataB = b.data() as Map<String, dynamic>? ?? {};
                   final timeA = dataA['lastMessageTime'] as Timestamp?;
                   final timeB = dataB['lastMessageTime'] as Timestamp?;
-                  
+
                   if (timeA == null && timeB == null) return 0;
                   if (timeA == null) return 1;
                   if (timeB == null) return -1;
-                  return timeB.compareTo(timeA); // El más reciente primero
+                  return timeB.compareTo(timeA);
                 });
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(screenWidth * 0.05),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>;
-                    
-                    // Descubrir quién es la OTRA persona en el chat
-                    final participants = List<String>.from(data['participants'] ?? []);
-                    participants.remove(currentUser.email);
-                    final otherUserEmail = participants.isNotEmpty ? participants.first : 'Desconocido';
-                    
-                    // Sacar los nombres del mapa que guardamos
-                    final userNames = data['userNames'] as Map<String, dynamic>? ?? {};
-                    final otherUserName = userNames[otherUserEmail] ?? otherUserEmail.split('@')[0];
-                    
-                    final lastMessage = data['lastMessage'] ?? '';
-                    final timestamp = data['lastMessageTime'] as Timestamp?;
-                    
-                    // Formatear la hora
-                    String timeStr = '';
+                    final rawData = docs[index].data();
+                    if (rawData is! Map<String, dynamic>) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final participants =
+                        List<String>.from(rawData['participants'] ?? []);
+                    participants.remove(currentEmail);
+                    final otherUserEmail = participants.isNotEmpty
+                        ? participants.first
+                        : 'Desconocido';
+                    final userNames =
+                        rawData['userNames'] as Map<String, dynamic>? ?? {};
+                    final otherUserName =
+                        userNames[otherUserEmail]?.toString() ??
+                            otherUserEmail.split('@')[0];
+                    final lastMessage =
+                        rawData['lastMessage']?.toString() ?? '';
+                    final timestamp = rawData['lastMessageTime'] as Timestamp?;
+
+                    var timeStr = '';
                     if (timestamp != null) {
                       final date = timestamp.toDate();
                       final now = DateTime.now();
-                      if (date.day == now.day && date.month == now.month && date.year == now.year) {
-                        timeStr = DateFormat('HH:mm').format(date); // Hoy (Hora)
-                      } else {
-                        timeStr = DateFormat('dd MMM').format(date); // Otro día (Fecha)
-                      }
+                      timeStr = date.day == now.day &&
+                              date.month == now.month &&
+                              date.year == now.year
+                          ? DateFormat('HH:mm').format(date)
+                          : DateFormat('dd MMM').format(date);
                     }
 
-                    return _buildChatTile(context, otherUserEmail, otherUserName, lastMessage, timeStr);
+                    return _buildChatTile(
+                      context,
+                      otherUserEmail,
+                      otherUserName,
+                      lastMessage,
+                      timeStr,
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                    );
                   },
                 );
               },
@@ -100,40 +121,46 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 
-  // TILE ESTILO PREMIUM
-  Widget _buildChatTile(BuildContext context, String email, String name, String lastMessage, String time) {
+  Widget _buildChatTile(
+    BuildContext context,
+    String email,
+    String name,
+    String lastMessage,
+    String time, {
+    required double screenWidth,
+    required double screenHeight,
+  }) {
+    final avatarSize = (screenWidth * 0.14).clamp(50.0, 60.0);
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ChatScreen(
-              otherUserEmail: email,
-              otherUserName: name,
-            ),
+            builder: (_) =>
+                ChatScreen(otherUserEmail: email, otherUserName: name),
           ),
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: screenHeight * 0.018),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(screenWidth * 0.06),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              blurRadius: screenWidth * 0.025,
+              offset: Offset(0, screenHeight * 0.005),
             ),
           ],
         ),
         child: Row(
           children: [
-            // AVATAR
             Container(
-              width: 56,
-              height: 56,
+              width: avatarSize,
+              height: avatarSize,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
@@ -141,16 +168,15 @@ class ChatListScreen extends StatelessWidget {
               child: Center(
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    fontSize: 22,
+                  style: TextStyle(
+                    fontSize: (screenWidth * 0.055).clamp(18.0, 23.0),
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
-            // TEXTOS
+            SizedBox(width: screenWidth * 0.04),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,8 +187,8 @@ class ChatListScreen extends StatelessWidget {
                       Expanded(
                         child: Text(
                           name,
-                          style: const TextStyle(
-                            fontSize: 17,
+                          style: TextStyle(
+                            fontSize: (screenWidth * 0.043).clamp(15.0, 18.0),
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
@@ -170,21 +196,22 @@ class ChatListScreen extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      SizedBox(width: screenWidth * 0.02),
                       Text(
                         time,
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: (screenWidth * 0.03).clamp(10.0, 13.0),
                           color: Colors.grey,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: screenHeight * 0.007),
                   Text(
                     lastMessage,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
                       color: AppColors.textSecondary,
                     ),
                     maxLines: 1,
@@ -199,33 +226,42 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 
-  // EMPTY STATE
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(double screenWidth, double screenHeight) {
+    final iconBox = screenWidth * 0.25;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: iconBox,
+              height: iconBox,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.chat_bubble_outline_rounded, size: 40, color: AppColors.primary),
+              child: Icon(Icons.chat_bubble_outline_rounded,
+                  size: iconBox * 0.4, color: AppColors.primary),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: screenHeight * 0.028),
+            Text(
               'No tienes mensajes',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(
+                fontSize: (screenWidth * 0.05).clamp(18.0, 22.0),
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Tus conversaciones con otros jugadores aparecerán aquí.',
+            SizedBox(height: screenHeight * 0.012),
+            Text(
+              'Tus conversaciones con otros jugadores apareceran aqui.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
+              ),
             ),
           ],
         ),

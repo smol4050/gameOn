@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../theme/colors.dart';
 import 'main_navigation_screen.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
@@ -8,10 +9,10 @@ class CompleteProfileScreen extends StatefulWidget {
   final String email;
 
   const CompleteProfileScreen({
-    super.key, 
-    required this.uid, 
-    required this.name, 
-    required this.email
+    super.key,
+    required this.uid,
+    required this.name,
+    required this.email,
   });
 
   @override
@@ -23,7 +24,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   String? _selectedLevel;
   bool _isSaving = false;
 
-  final List<String> _sports = ['Fútbol', 'Baloncesto', 'Tenis', 'Pádel'];
+  final List<String> _sports = ['Futbol', 'Baloncesto', 'Tenis', 'Padel'];
   final List<String> _levels = ['Principiante', 'Intermedio', 'Avanzado'];
 
   void _saveProfile() async {
@@ -44,7 +45,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         'sport': _selectedSport,
         'level': _selectedLevel,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -52,8 +53,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: $e')),
+        SnackBar(
+            content: Text('Error al guardar: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -62,57 +65,77 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final padding = screenWidth * 0.06;
+    final inputHeight = (screenHeight * 0.064).clamp(50.0, 60.0);
+    final radius = screenWidth * 0.035;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(padding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Casi listo 🏁",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
               Text(
-                "Hola ${widget.name}, dinos qué juegas para personalizar tu experiencia.",
-                style: const TextStyle(color: Colors.grey, fontSize: 16),
+                'Casi listo',
+                style: TextStyle(
+                  fontSize: (screenWidth * 0.07).clamp(24.0, 30.0),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 32),
-              
-              // Selector de Deporte
+              SizedBox(height: screenHeight * 0.01),
+              Text(
+                'Hola ${widget.name}, dinos que juegas para personalizar tu experiencia.',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.038),
               _buildDropdown(
-                hint: "Tu Deporte",
+                hint: 'Tu Deporte',
                 value: _selectedSport,
                 items: _sports,
                 onChanged: (val) => setState(() => _selectedSport = val),
+                height: inputHeight,
+                radius: radius,
+                horizontalPadding: padding,
               ),
-              
-              const SizedBox(height: 20),
-
-              // Selector de Nivel
+              SizedBox(height: screenHeight * 0.024),
               _buildDropdown(
-                hint: "Tu Nivel",
+                hint: 'Tu Nivel',
                 value: _selectedLevel,
                 items: _levels,
                 onChanged: (val) => setState(() => _selectedLevel = val),
+                height: inputHeight,
+                radius: radius,
+                horizontalPadding: padding,
               ),
-
               const Spacer(),
-
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: inputHeight,
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(radius)),
                   ),
-                  child: _isSaving 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Finalizar Registro", style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: _isSaving
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          'Finalizar Registro',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -127,19 +150,25 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     required String? value,
     required List<String> items,
     required Function(String?) onChanged,
+    required double height,
+    required double radius,
+    required double horizontalPadding,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: height,
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.65),
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(radius),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           hint: Text(hint),
           isExpanded: true,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),

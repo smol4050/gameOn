@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // 🔹 Agregado para guardar el perfil
-import 'package:firebase_auth/firebase_auth.dart';     // 🔹 Agregado para el manejo de errores
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'main_navigation_screen.dart';
-import '../services/auth_service.dart'; // Importamos el backend
+import '../services/auth_service.dart';
+import '../theme/colors.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -12,7 +13,6 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  // 🔹 VARIABLES DE ESTADO
   bool obscure1 = true;
   bool obscure2 = true;
   bool _isLoading = false;
@@ -20,50 +20,47 @@ class _SignInScreenState extends State<SignInScreen> {
   String? selectedSport;
   String? selectedLevel;
 
-  final sports = ['Fútbol', 'Basket', 'Tenis', 'Ultimate', 'Otro'];
+  final sports = ['Futbol', 'Basket', 'Tenis', 'Ultimate', 'Otro'];
   final levels = ['Principiante', 'Intermedio', 'Avanzado'];
 
-  // 🔹 CONTROLADORES DE TEXTO
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
-  // 🔹 LÓGICA DE REGISTRO
   void _register() async {
-    // 1. Validar que no haya campos vacíos
-    if (_nameController.text.isEmpty || 
-        _emailController.text.isEmpty || 
-        _passwordController.text.isEmpty || 
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty ||
-        selectedSport == null || 
+        selectedSport == null ||
         selectedLevel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, llena todos los campos y selecciones.')),
+        const SnackBar(
+            content: Text('Por favor, llena todos los campos y selecciones.')),
       );
       return;
     }
 
-    // 2. Validar que las contraseñas coincidan
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Las contraseñas no coinciden.'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Las contrasenas no coinciden.'),
+            backgroundColor: Colors.red),
       );
       return;
     }
 
-    // 3. Iniciar estado de carga
     setState(() => _isLoading = true);
 
     try {
-      // 4. Crear usuario en Auth
       final user = await AuthService().registerWithEmail(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
       if (user != null) {
-        // 5. Guardar Perfil en Firestore [P1]
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'name': _nameController.text.trim(),
@@ -80,21 +77,26 @@ class _SignInScreenState extends State<SignInScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      // Capturamos el error real gracias a la mejora en AuthService
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Error al registrar usuario'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text(e.message ?? 'Error al registrar usuario'),
+            backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error al guardar el perfil: $e'),
+            backgroundColor: Colors.red),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   void dispose() {
-    // Liberar memoria al cerrar la pantalla
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -104,20 +106,29 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final pagePadding = screenWidth * 0.06;
+    final headerHeight = screenHeight * 0.085;
+    final inputHeight = (screenHeight * 0.064).clamp(50.0, 60.0);
+    final radius = screenWidth * 0.035;
+    final titleSize = (screenWidth * 0.055).clamp(18.0, 22.0);
+    final labelSize = (screenWidth * 0.036).clamp(13.0, 15.0);
+    final buttonTextSize = (screenWidth * 0.043).clamp(15.0, 18.0);
+    final avatarSize = (screenWidth * 0.28).clamp(92.0, 120.0);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F8FF),
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 HEADER
             Container(
-              height: 70,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              height: headerHeight,
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE5E7EB)),
-                ),
+                border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
               ),
               child: Row(
                 children: [
@@ -125,43 +136,44 @@ class _SignInScreenState extends State<SignInScreen> {
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Text(
-                    'Crear Cuenta',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      'Crear Cuenta',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-
-            // 🔹 BODY
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(pagePadding),
                 child: Column(
                   children: [
-                    // 🔹 FOTO PERFIL
                     Column(
                       children: [
                         Stack(
                           children: [
                             Container(
-                              width: 110,
-                              height: 110,
+                              width: avatarSize,
+                              height: avatarSize,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE5E7EB),
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Colors.white,
-                                  width: 3,
+                                  width: screenWidth * 0.008,
                                 ),
                               ),
-                              child: const Center(
-                                child: Text(
-                                  '👤',
-                                  style: TextStyle(fontSize: 40),
+                              child: Center(
+                                child: Icon(
+                                  Icons.person,
+                                  size: avatarSize * 0.42,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ),
@@ -169,114 +181,108 @@ class _SignInScreenState extends State<SignInScreen> {
                               bottom: 0,
                               right: 0,
                               child: Container(
-                                width: 40,
-                                height: 40,
+                                width: avatarSize * 0.36,
+                                height: avatarSize * 0.36,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2E7D32),
+                                  color: AppColors.primary,
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: Colors.white,
-                                    width: 3,
+                                    width: screenWidth * 0.008,
                                   ),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.camera_alt,
                                   color: Colors.white,
-                                  size: 18,
+                                  size: avatarSize * 0.16,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Añadir foto (Opcional)',
+                        SizedBox(height: screenHeight * 0.014),
+                        Text(
+                          'Anadir foto (Opcional)',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6A7282),
+                            fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                            color: const Color(0xFF6A7282),
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 30),
-
-                    // 🔹 FORMULARIO
-                    _label('Nombre Completo'),
-                    _input('Nombre', _nameController),
-
-                    _label('Correo Electrónico'),
-                    _input('tu@correo.com', _emailController),
-
-                    _label('Contraseña'),
+                    SizedBox(height: screenHeight * 0.035),
+                    _label('Nombre Completo', labelSize, screenHeight),
+                    _input('Nombre', _nameController, inputHeight, radius,
+                        pagePadding),
+                    _label('Correo Electronico', labelSize, screenHeight),
+                    _input('tu@correo.com', _emailController, inputHeight,
+                        radius, pagePadding),
+                    _label('Contrasena', labelSize, screenHeight),
                     _passwordInput(
                       obscure1,
                       () => setState(() => obscure1 = !obscure1),
                       _passwordController,
+                      inputHeight,
+                      radius,
+                      pagePadding,
                     ),
-
-                    _label('Confirmar Contraseña'),
+                    _label('Confirmar Contrasena', labelSize, screenHeight),
                     _passwordInput(
                       obscure2,
                       () => setState(() => obscure2 = !obscure2),
                       _confirmPasswordController,
+                      inputHeight,
+                      radius,
+                      pagePadding,
                     ),
-
-                    _label('Deporte Preferido'),
+                    _label('Deporte Preferido', labelSize, screenHeight),
                     _dropdown(sports, selectedSport, (v) {
                       setState(() => selectedSport = v);
-                    }),
-
-                    _label('Nivel de Juego'),
+                    }, inputHeight, radius, pagePadding),
+                    _label('Nivel de Juego', labelSize, screenHeight),
                     _dropdown(levels, selectedLevel, (v) {
                       setState(() => selectedLevel = v);
-                    }),
-
-                    const SizedBox(height: 24),
-
-                    // 🔹 BOTÓN COMPLETAR REGISTRO
+                    }, inputHeight, radius, pagePadding),
+                    SizedBox(height: screenHeight * 0.03),
                     SizedBox(
                       width: double.infinity,
-                      height: 56,
+                      height: inputHeight,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2E7D32),
+                          backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(radius),
                           ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text(
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : Text(
                                 'Completar Registro',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: buttonTextSize,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
                       ),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // 🔹 LOGIN LINK
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    SizedBox(height: screenHeight * 0.025),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         const Text(
-                          '¿Ya tienes cuenta? ',
-                          style: TextStyle(
-                            color: Color(0xFF4A5565),
-                          ),
+                          'Ya tienes cuenta? ',
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: const Text(
-                            'Inicia sesión',
+                            'Inicia sesion',
                             style: TextStyle(
-                              color: Color(0xFF2E7D32),
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -293,31 +299,36 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  // 🔹 LABEL
-  Widget _label(String text) {
+  Widget _label(String text, double fontSize, double screenHeight) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 6),
+      padding: EdgeInsets.only(
+          top: screenHeight * 0.018, bottom: screenHeight * 0.007),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           text,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: fontSize,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF364153),
+            color: const Color(0xFF364153),
           ),
         ),
       ),
     );
   }
 
-  // 🔹 INPUT MODIFICADO PARA RECIBIR CONTROLADOR
-  Widget _input(String hint, TextEditingController controller) {
+  Widget _input(
+    String hint,
+    TextEditingController controller,
+    double height,
+    double radius,
+    double horizontalPadding,
+  ) {
     return Container(
-      height: 54,
+      height: height,
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(radius),
         color: Colors.white,
       ),
       child: TextField(
@@ -325,28 +336,36 @@ class _SignInScreenState extends State<SignInScreen> {
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          contentPadding:
+              EdgeInsets.symmetric(horizontal: horizontalPadding * 0.65),
         ),
       ),
     );
   }
 
-  // 🔹 PASSWORD INPUT MODIFICADO PARA RECIBIR CONTROLADOR
-  Widget _passwordInput(bool obscure, VoidCallback toggle, TextEditingController controller) {
+  Widget _passwordInput(
+    bool obscure,
+    VoidCallback toggle,
+    TextEditingController controller,
+    double height,
+    double radius,
+    double horizontalPadding,
+  ) {
     return Container(
-      height: 54,
+      height: height,
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(radius),
         color: Colors.white,
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
         decoration: InputDecoration(
-          hintText: '••••••••',
+          hintText: '********',
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          contentPadding:
+              EdgeInsets.symmetric(horizontal: horizontalPadding * 0.65),
           suffixIcon: IconButton(
             icon: Icon(
               obscure ? Icons.visibility_off : Icons.visibility,
@@ -359,18 +378,20 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  // 🔹 DROPDOWN
   Widget _dropdown(
     List<String> items,
     String? value,
     Function(String?) onChanged,
+    double height,
+    double radius,
+    double horizontalPadding,
   ) {
     return Container(
-      height: 54,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: height,
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.5),
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(radius),
         color: Colors.white,
       ),
       child: DropdownButtonHideUnderline(
