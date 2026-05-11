@@ -768,7 +768,7 @@ class _CrearScreenState extends State<CrearScreen> {
               : Text(
                   _isFormValid
                       ? 'CREAR PARTIDO'
-                      : 'SELECCIONA LUGAR EN EL MAPA',
+                      : 'COMPLETE TODOS LOS CAMPOS PARA CREAR',
                   style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
