@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
 import 'home_screen.dart';
 import 'eventos_screen.dart';
 import 'agenda_screen.dart';
@@ -6,21 +7,27 @@ import 'perfil_screen.dart';
 import 'crear_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final int initialIndex;
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
-  // Lista de pantallas principales
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const EventsScreen(), 
-    const AgendaScreen(),
-    const PerfilScreen(),
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex.clamp(0, 3).toInt();
+  }
+
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    EventsScreen(),
+    AgendaScreen(),
+    PerfilScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -31,48 +38,62 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // 🔹 SOLUCIÓN CRÍTICA AL CRASH: Cambiamos el IndexedStack por la pantalla directa.
-      // Ahora solo carga la pantalla que necesitas, liberando el 75% del trabajo de memoria.
-      body: _screens[_selectedIndex],
+    final size = MediaQuery.sizeOf(context);
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final navHeight = (screenHeight * 0.075).clamp(58.0, 72.0);
+    final fabSize = (screenWidth * 0.14).clamp(52.0, 64.0);
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CrearScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFF2E7D32),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
+    return Scaffold(
+      body: _screens[_selectedIndex],
+      floatingActionButton: SizedBox(
+        width: fabSize,
+        height: fabSize,
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CrearScreen()),
+            );
+          },
+          backgroundColor: AppColors.primary,
+          shape: const CircleBorder(),
+          child: Icon(Icons.add, color: Colors.white, size: fabSize * 0.48),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
+        notchMargin: screenWidth * 0.02,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: 60,
+          height: navHeight,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Lado Izquierdo: Home y Eventos
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _navItem(Icons.home, "Inicio", 0),
-                  _navItem(Icons.explore, "Eventos", 1),
-                ],
+              Flexible(
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: _navItem(Icons.home, 'Inicio', 0, screenWidth)),
+                    Expanded(
+                        child:
+                            _navItem(Icons.explore, 'Eventos', 1, screenWidth)),
+                  ],
+                ),
               ),
-              // Lado Derecho: Agenda y Perfil
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _navItem(Icons.calendar_today, "Agenda", 2),
-                  _navItem(Icons.person, "Perfil", 3),
-                ],
+              SizedBox(width: fabSize * 1.05),
+              Flexible(
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: _navItem(
+                            Icons.calendar_today, 'Agenda', 2, screenWidth)),
+                    Expanded(
+                        child:
+                            _navItem(Icons.person, 'Perfil', 3, screenWidth)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -81,24 +102,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  // Widget auxiliar para los íconos de la barra
-  Widget _navItem(IconData icon, String label, int index) {
-    bool isActive = _selectedIndex == index;
+  Widget _navItem(IconData icon, String label, int index, double screenWidth) {
+    final isActive = _selectedIndex == index;
     return MaterialButton(
-      minWidth: 40,
+      padding: EdgeInsets.zero,
+      minWidth: screenWidth * 0.12,
       onPressed: () => _onItemTapped(index),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             icon,
-            color: isActive ? const Color(0xFF2E7D32) : Colors.grey,
+            size: (screenWidth * 0.055).clamp(20.0, 26.0),
+            color: isActive ? AppColors.primary : Colors.grey,
           ),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12,
-              color: isActive ? const Color(0xFF2E7D32) : Colors.grey,
+              fontSize: (screenWidth * 0.03).clamp(10.0, 12.5),
+              color: isActive ? AppColors.primary : Colors.grey,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),
           ),

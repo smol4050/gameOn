@@ -38,17 +38,20 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
       User? user = userCredential.user;
 
       if (user != null) {
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        DocumentSnapshot userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
         bool isNewUser = !userDoc.exists;
 
         if (isNewUser) {
@@ -61,14 +64,13 @@ class AuthService {
             'createdAt': FieldValue.serverTimestamp(),
           });
         }
-        
+
         return {
           'user': user,
           'isNewUser': isNewUser,
         };
       }
     } catch (e) {
-      print("Error en Google Sign-In: $e");
       rethrow;
     }
     return null;

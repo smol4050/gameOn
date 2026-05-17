@@ -1,100 +1,147 @@
 import 'package:flutter/material.dart';
-import 'confirmar_unirse_screen.dart'; // 🔹 Importante para que funcione la navegación
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'confirmar_unirse_screen.dart'; // 🔹 Navegación para unirse a eventos
+import 'crear_evento_screen.dart'; // 🔹 Importamos la nueva pantalla
 
-class EventsScreen extends StatelessWidget {
+class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
 
   @override
+  State<EventsScreen> createState() => _EventsScreenState();
+}
+
+class _EventsScreenState extends State<EventsScreen> {
+  bool _canCreateEvents = false;
+  bool _isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserRole();
+  }
+
+  // 🔹 LÓGICA DE ROLES: Verifica si es admin o creador de eventos
+  Future<void> _checkUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (doc.exists && doc.data() != null) {
+        final role = doc.data()!['role'] ?? 'user';
+
+        setState(() {
+          // Los dos pueden crear eventos
+          _canCreateEvents = (role == 'admin' || role == 'creador_eventos');
+          // SOLO el admin es admin
+          _isAdmin = (role == 'admin');
+        });
+      }
+    } catch (e) {
+      debugPrint("Error verificando rol: $e");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 120),
+    return DefaultTabController(
+      length: 2, // 🔹 Tenemos 2 pestañas: "Próximos" y "En Curso"
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF9FAFB),
+        
+        // 🔥 BOTÓN FLOTANTE: Solo aparece si _canCreateEvents es true
+        floatingActionButton: _canCreateEvents
+            ? FloatingActionButton.extended(
+                onPressed: () {
+                  // 🔹 NAVEGAMOS A LA PANTALLA DE CREAR EVENTO
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CrearEventoScreen(isAdmin: _isAdmin),
+                    ),
+                  );
+                },
+                backgroundColor: const Color(0xFF155DFC),
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text(
+                  'Crear Evento', 
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                ),
+              )
+            : null,
+
+        body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔹 HEADER
+              // 🔹 HEADER Y TABS
               Container(
-                padding: const EdgeInsets.fromLTRB(24, 26, 24, 20),
+                padding: const EdgeInsets.fromLTRB(24, 26, 24, 0),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: Color(0xFFF3F4F6)),
-                  ),
+                  border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Eventos',
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF155DFC),
-                          ),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Eventos',
+                              style: TextStyle(
+                                fontSize: 34,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF155DFC),
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Torneos y competencias oficiales',
+                              style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Torneos y competencias oficiales',
-                          style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(
+                            Icons.notifications_none_rounded,
+                            size: 28,
+                            color: Color(0xFF374151),
+                          ),
                         ),
                       ],
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.notifications_none_rounded,
-                        size: 28,
-                        color: Color(0xFF374151),
-                      ),
+                    const SizedBox(height: 16),
+                    // 🔹 TAB BAR (Controlador de pestañas)
+                    const TabBar(
+                      indicatorColor: Color(0xFF155DFC),
+                      labelColor: Color(0xFF155DFC),
+                      unselectedLabelColor: Color(0xFF6A7282),
+                      labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      tabs: [
+                        Tab(text: "Próximos"),
+                        Tab(text: "En Curso"),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 24),
-
-              // 🔥 EVENTO DESTACADO
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _featuredEvent(context), // 🔹 Pasamos context para navegar
-              ),
-
-              const SizedBox(height: 28),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Próximos Eventos',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+              // 🔹 CONTENIDO DE LAS PESTAÑAS (Firestore Stream)
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildEventsList(status: 'upcoming'), // Pestaña 1
+                    _buildEventsList(status: 'ongoing'),  // Pestaña 2
+                  ],
                 ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // 🔹 LISTA DE PRÓXIMOS EVENTOS
-              ...upcomingEvents.map((event) => _eventCard(context, event)).toList(),
-
-              const SizedBox(height: 30),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'En Curso',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              _eventCard(
-                context,
-                ongoingEvent,
-                ongoing: true,
               ),
             ],
           ),
@@ -103,20 +150,63 @@ class EventsScreen extends StatelessWidget {
     );
   }
 
-  // 🔥 FEATURED EVENT
-  Widget _featuredEvent(BuildContext context) {
-    // Definimos la data del evento destacado para que coincida con lo que espera la otra pantalla
-    final featuredData = {
-      'title': 'Cali Vive el Pádel',
-      'sport': 'Pádel',
-      'price': '\$5.000.000 COP',
-      'date': '14 - 15 Marzo',
-      'location': 'Padeling by Cabal',
-      'joinedSlots': 42,
-      'totalSlots': 64,
-      'image': 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=1200&auto=format&fit=crop',
-    };
+  // 🔥 LISTA EN TIEMPO REAL DESDE FIRESTORE
+  Widget _buildEventsList({required String status}) {
+    return StreamBuilder<QuerySnapshot>(
+      // Filtramos por el campo "status" en Firestore
+      stream: FirebaseFirestore.instance
+          .collection('events')
+          .where('status', isEqualTo: status)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Text(
+              status == 'upcoming' 
+                  ? 'No hay eventos próximos aún.' 
+                  : 'No hay eventos en curso.',
+              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 16),
+            ),
+          );
+        }
 
+        final events = snapshot.data!.docs;
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 24, bottom: 120),
+          itemCount: events.length,
+          itemBuilder: (context, index) {
+            final doc = events[index];
+            final eventData = doc.data() as Map<String, dynamic>;
+            final eventId = doc.id;
+
+            // 🔹 Renderizado Inteligente: Si en BD le pusiste "isFeatured: true", lo hace grande
+            if (eventData['isFeatured'] == true) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 28),
+                child: _featuredEvent(context, eventData, eventId),
+              );
+            }
+
+            // Diseño normal de lista
+            return _eventCard(
+              context, 
+              eventData, 
+              eventId,
+              ongoing: status == 'ongoing'
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 🔥 EVENTO DESTACADO (Adaptado a Firestore)
+  Widget _featuredEvent(BuildContext context, Map<String, dynamic> featuredData, String eventId) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -133,7 +223,7 @@ class EventsScreen extends StatelessWidget {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 child: Image.network(
-                  featuredData['image'].toString(),
+                  featuredData['image'] ?? 'https://via.placeholder.com/400',
                   height: 240,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -155,10 +245,15 @@ class EventsScreen extends StatelessWidget {
                 right: 18,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(color: const Color(0xFFFF6900), borderRadius: BorderRadius.circular(50)),
+                  decoration: BoxDecoration(
+                      color: const Color(0xFFFF6900),
+                      borderRadius: BorderRadius.circular(50)),
                   child: const Text(
                     'DESTACADO',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
                   ),
                 ),
               ),
@@ -166,20 +261,22 @@ class EventsScreen extends StatelessWidget {
                 left: 20,
                 bottom: 22,
                 child: Text(
-                  featuredData['title'].toString(),
-                  style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
+                  featuredData['title'] ?? 'Evento',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
-
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                _infoRow(Icons.calendar_today_outlined, featuredData['date'].toString()),
+                _infoRow(Icons.calendar_today_outlined, featuredData['date'] ?? 'Por definir'),
                 const SizedBox(height: 14),
-                _infoRow(Icons.location_on_outlined, featuredData['location'].toString()),
+                _infoRow(Icons.location_on_outlined, featuredData['location'] ?? 'Ubicación'),
                 const SizedBox(height: 28),
 
                 // 🔹 BUTTON DESTACADO
@@ -189,19 +286,27 @@ class EventsScreen extends StatelessWidget {
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(colors: [Color(0xFF155DFC), Color(0xFF2E7D32)]),
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF155DFC), Color(0xFF2E7D32)]),
                     ),
                     child: ElevatedButton(
                       onPressed: () {
-                        // 🔹 NAVEGACIÓN AL EVENTO DESTACADO
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ConfirmarUnirseScreen(matchId: 'feat_001', matchData: featuredData)
-                        ));
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ConfirmarUnirseScreen(
+                                    matchId: eventId,
+                                    matchData: featuredData)));
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent),
                       child: const Text(
                         'Inscribirse Ahora',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white), // 🔹 Letra Blanca
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
                       ),
                     ),
                   ),
@@ -214,8 +319,8 @@ class EventsScreen extends StatelessWidget {
     );
   }
 
-  // 🔹 EVENT CARD
-  Widget _eventCard(BuildContext context, Map<String, dynamic> event, {bool ongoing = false}) {
+  // 🔹 EVENT CARD (Adaptada a Firestore)
+  Widget _eventCard(BuildContext context, Map<String, dynamic> event, String eventId, {bool ongoing = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Container(
@@ -223,7 +328,9 @@ class EventsScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [BoxShadow(blurRadius: 10, offset: Offset(0, 3), color: Colors.black12)],
+          boxShadow: const [
+            BoxShadow(blurRadius: 10, offset: Offset(0, 3), color: Colors.black12)
+          ],
         ),
         child: Row(
           children: [
@@ -231,7 +338,12 @@ class EventsScreen extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.network(event['image'], width: 100, height: 100, fit: BoxFit.cover),
+                  child: Image.network(
+                    event['image'] ?? 'https://via.placeholder.com/100',
+                    width: 100, 
+                    height: 100, 
+                    fit: BoxFit.cover
+                  ),
                 ),
                 if (ongoing)
                   Positioned(
@@ -239,8 +351,14 @@ class EventsScreen extends StatelessWidget {
                     left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: const Color(0xFFFF6900), borderRadius: BorderRadius.circular(8)),
-                      child: const Text('EN CURSO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
+                      decoration: BoxDecoration(
+                          color: const Color(0xFFFF6900),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: const Text('EN CURSO',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10)),
                     ),
                   ),
               ],
@@ -250,29 +368,38 @@ class EventsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF111827))),
+                  Text(event['title'] ?? 'Torneo',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          color: Color(0xFF111827))),
                   const SizedBox(height: 8),
-                  _miniInfo(Icons.attach_money, event['price'], orange: true),
+                  _miniInfo(Icons.attach_money, event['price'] ?? 'Gratis', orange: true),
                   const SizedBox(height: 4),
-                  _miniInfo(Icons.location_on_outlined, event['location']),
+                  _miniInfo(Icons.location_on_outlined, event['location'] ?? 'Ubicación'),
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 36,
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // 🔹 NAVEGACIÓN DESDE LA CARD
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ConfirmarUnirseScreen(matchId: 'event_${event['title']}', matchData: event)
-                        ));
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ConfirmarUnirseScreen(
+                                    matchId: eventId,
+                                    matchData: event)));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2E7D32),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       child: const Text(
                         'Ver más',
-                        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white), // 🔹 Letra Blanca
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white), 
                       ),
                     ),
                   ),
@@ -298,55 +425,15 @@ class EventsScreen extends StatelessWidget {
   Widget _miniInfo(IconData icon, String text, {bool orange = false}) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: orange ? const Color(0xFFF54900) : const Color(0xFF6A7282)),
+        Icon(icon,
+            size: 14,
+            color: orange ? const Color(0xFFF54900) : const Color(0xFF6A7282)),
         const SizedBox(width: 8),
-        Text(text, style: TextStyle(color: orange ? const Color(0xFFF54900) : const Color(0xFF4A5565), fontSize: 12)),
+        Text(text,
+            style: TextStyle(
+                color: orange ? const Color(0xFFF54900) : const Color(0xFF4A5565),
+                fontSize: 12)),
       ],
     );
   }
 }
-
-// 🔥 MOCK DATA (Agregamos cupos para que la barra de progreso funcione)
-final upcomingEvents = [
-  {
-    'title': 'Copa Voley Playa',
-    'sport': 'Voley',
-    'price': '\$2.500.000 COP',
-    'date': '10 - 11 Mayo',
-    'location': 'Barena',
-    'joinedSlots': 12,
-    'totalSlots': 24,
-    'image': 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    'title': 'Torneo Flota Chancle',
-    'sport': 'Fútbol',
-    'price': '\$1.000.000 COP',
-    'date': '18 - 19 Mayo',
-    'location': 'Cancha UAO',
-    'joinedSlots': 8,
-    'totalSlots': 10,
-    'image': 'https://images.unsplash.com/photo-1521412644187-c49fa049e84d?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    'title': 'Open Tenis Cali',
-    'sport': 'Tenis',
-    'price': '\$3.000.000 COP',
-    'date': '20 - 23 Mayo',
-    'location': 'Club Campestre',
-    'joinedSlots': 20,
-    'totalSlots': 32,
-    'image': 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1200&auto=format&fit=crop',
-  },
-];
-
-final ongoingEvent = {
-  'title': 'Liga Fútbol 7',
-  'sport': 'Fútbol',
-  'price': '\$8.000.000 COP',
-  'date': 'Finaliza 30 Mayo',
-  'location': 'La Chilena',
-  'joinedSlots': 15,
-  'totalSlots': 16,
-  'image': 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=1200&auto=format&fit=crop',
-};

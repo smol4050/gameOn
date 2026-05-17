@@ -1,20 +1,25 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'main_navigation_screen.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide ImageSource;
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
+import '../services/image_service.dart'; // 🔹 Asegúrate de que esta ruta sea correcta
 
-class CrearScreen extends StatefulWidget {
-  const CrearScreen({super.key});
+class CrearEventoScreen extends StatefulWidget {
+  final bool isAdmin; // Para saber si puede destacar
+
+  const CrearEventoScreen({super.key, required this.isAdmin});
 
   @override
-  State<CrearScreen> createState() => _CrearScreenState();
+  State<CrearEventoScreen> createState() => _CrearEventoScreenState();
 }
 
-class _CrearScreenState extends State<CrearScreen> {
+class _CrearEventoScreenState extends State<CrearEventoScreen> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
-  int players = 10;
+  int players = 32; // Por defecto más grande para eventos
   int price = 2000;
   bool _isLoading = false;
   bool _isLoadingVenues = true;
@@ -24,14 +29,20 @@ class _CrearScreenState extends State<CrearScreen> {
   String? _selectedZone;
   final String _searchQuery = "";
 
+  // 🔹 CAMPOS ESPECÍFICOS DE EVENTOS
+  String _status = 'upcoming'; 
+  bool _isFeatured = false;
+
+  // 🔹 VARIABLES PARA IMAGEN
+  String? _eventImageUrl;
+  bool _isUploadingImage = false;
+
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController priceController =
-      TextEditingController(text: '2000');
+  final TextEditingController priceController = TextEditingController(text: '2000');
 
   MapboxMap? mapboxMap;
   PointAnnotationManager? pointAnnotationManager;
 
-  // 🔹 AHORA LA LISTA ESTÁ VACÍA PORQUE SE LLENARÁ DESDE FIREBASE
   List<Map<String, dynamic>> _venues = [];
 
   @override
@@ -42,33 +53,21 @@ class _CrearScreenState extends State<CrearScreen> {
     _fetchCanchasDesdeFirebase();
   }
 
-  // 🔹 LÓGICA MÁGICA: DESCARGA Y SUBIDA AUTOMÁTICA
+  // 🔹 LÓGICA MÁGICA DE CANCHAS
   Future<void> _fetchCanchasDesdeFirebase() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('canchas').get();
+      final snapshot = await FirebaseFirestore.instance.collection('canchas').get();
 
-      if (snapshot.docs.isEmpty) {
-        // Si no hay canchas en Firebase, subimos nuestra lista por defecto
-        await _subirCanchasPorDefecto();
-        // Volvemos a consultar después de subir
-        final newSnapshot =
-            await FirebaseFirestore.instance.collection('canchas').get();
-        if (!mounted) return;
-        setState(() {
-          _venues = newSnapshot.docs.map((doc) => doc.data()).toList();
-          _isLoadingVenues = false;
-        });
-      } else {
-        // Si ya existen, simplemente las cargamos
+      if (snapshot.docs.isNotEmpty) {
         if (!mounted) return;
         setState(() {
           _venues = snapshot.docs.map((doc) => doc.data()).toList();
           _isLoadingVenues = false;
         });
+      } else {
+        if (mounted) setState(() => _isLoadingVenues = false);
       }
 
-      // Si el mapa ya cargó, actualizamos los pines
       if (pointAnnotationManager != null) {
         _updateMapMarkers();
       }
@@ -78,13 +77,62 @@ class _CrearScreenState extends State<CrearScreen> {
     }
   }
 
+  // 🔹 LÓGICA DE SUBIDA DE IMAGEN
+  Future<void> _pickAndUploadEventImage() async {
+    final picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() => _isUploadingImage = true);
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final targetPath =
+          "${tempDir.path}/event_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+      // Comprimimos la imagen
+      final XFile? compressedFile =
+          await FlutterImageCompress.compressAndGetFile(
+        pickedFile.path,
+        targetPath,
+        quality: 60, 
+        minWidth: 800,
+        minHeight: 600,
+      );
+
+      if (compressedFile != null) {
+        final String? url = await ImageService.uploadImage(
+          File(compressedFile.path),
+        );
+
+        if (url != null) {
+          if (mounted) setState(() => _eventImageUrl = url);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error subiendo imagen del evento: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir la imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
   // 🚀 FUNCIÓN PARA ABRIR PANTALLA COMPLETA
   void _abrirMapaCompleto() async {
-    // Navegamos al mapa completo y esperamos que nos devuelva una cancha
     final selectedVenue = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MapaPantallaCompletaScreen(
+        builder: (context) => MapaPantallaCompletaEventoScreen(
           venues: _venues,
           selectedSport: _selectedSport,
           selectedZone: _selectedZone,
@@ -92,14 +140,12 @@ class _CrearScreenState extends State<CrearScreen> {
       ),
     );
 
-    // Si el usuario eligió una cancha, la actualizamos en el form
     if (!mounted) return;
     if (selectedVenue != null) {
       setState(() {
         _selectedLocation = selectedVenue['name'];
       });
 
-      // Hacemos que el mapa pequeño vuele a esa ubicación para mostrarla
       mapboxMap?.flyTo(
           CameraOptions(
             center: Point(
@@ -110,147 +156,6 @@ class _CrearScreenState extends State<CrearScreen> {
           ),
           MapAnimationOptions(duration: 1500));
     }
-  }
-
-  Future<void> _subirCanchasPorDefecto() async {
-    final List<Map<String, dynamic>> defaultVenues = [
-      {
-        'name': 'EL Monumental Cali',
-        'sport': 'Fútbol',
-        'zone': 'Norte',
-        'lat': 3.4800,
-        'lng': -76.5150
-      },
-      {
-        'name': 'Fútbol 5 La Primera',
-        'sport': 'Fútbol',
-        'zone': 'Norte',
-        'lat': 3.4750,
-        'lng': -76.5100
-      },
-      {
-        'name': 'Centro Deportivo Las Palmas',
-        'sport': 'Fútbol',
-        'zone': 'Sur',
-        'lat': 3.3800,
-        'lng': -76.5350
-      },
-      {
-        'name': 'Complejo Deportivo 5-0',
-        'sport': 'Fútbol',
-        'zone': 'Sur',
-        'lat': 3.3750,
-        'lng': -76.5300
-      },
-      {
-        'name': 'Pascual Obrero',
-        'sport': 'Fútbol',
-        'zone': 'Centro',
-        'lat': 3.4450,
-        'lng': -76.5250
-      },
-      {
-        'name': 'Canchas Panamericana',
-        'sport': 'Fútbol',
-        'zone': 'Centro',
-        'lat': 3.4350,
-        'lng': -76.5350
-      },
-      {
-        'name': 'SAN SIRO Sintéticas',
-        'sport': 'Fútbol',
-        'zone': 'Oriente',
-        'lat': 3.4200,
-        'lng': -76.4950
-      },
-      {
-        'name': 'Canchas La 14 Oriente',
-        'sport': 'Fútbol',
-        'zone': 'Oriente',
-        'lat': 3.4250,
-        'lng': -76.4900
-      },
-      {
-        'name': 'Canchas Bellavista Sport',
-        'sport': 'Fútbol',
-        'zone': 'Occidente',
-        'lat': 3.4550,
-        'lng': -76.5500
-      },
-      {
-        'name': 'Canchas Los Cristales',
-        'sport': 'Fútbol',
-        'zone': 'Occidente',
-        'lat': 3.4450,
-        'lng': -76.5600
-      },
-      // ULTIMATE AÑADIDO
-      {
-        'name': 'Parque Los Álamos (Público)',
-        'sport': 'Ultimate',
-        'zone': 'Norte',
-        'lat': 3.4930,
-        'lng': -76.5050
-      },
-      {
-        'name': 'Parque La Cascada (Público)',
-        'sport': 'Ultimate',
-        'zone': 'Sur',
-        'lat': 3.4187,
-        'lng': -76.5473
-      },
-      {
-        'name': 'Cancha de la 66 (Público)',
-        'sport': 'Ultimate',
-        'zone': 'Sur',
-        'lat': 3.3985,
-        'lng': -76.5362
-      },
-      {
-        'name': 'Cancha de la 70 (Público)',
-        'sport': 'Ultimate',
-        'zone': 'Norte',
-        'lat': 3.4682,
-        'lng': -76.4951
-      },
-      {
-        'name': 'Canchas Univalle',
-        'sport': 'Ultimate',
-        'zone': 'Sur',
-        'lat': 3.3766,
-        'lng': -76.5332
-      },
-      // VÓLEY
-      {
-        'name': 'Coliseo Evangelista Mora',
-        'sport': 'Vóley',
-        'zone': 'Centro',
-        'lat': 3.4300,
-        'lng': -76.5350
-      },
-      {
-        'name': 'Club Deportivo Oeste Vóley',
-        'sport': 'Vóley',
-        'zone': 'Occidente',
-        'lat': 3.4520,
-        'lng': -76.5480
-      },
-      {
-        'name': 'Arena Vóley Cali',
-        'sport': 'Vóley',
-        'zone': 'Oriente',
-        'lat': 3.4050,
-        'lng': -76.4950
-      },
-    ];
-
-    final batch = FirebaseFirestore.instance.batch();
-    for (var venue in defaultVenues) {
-      final docRef = FirebaseFirestore.instance.collection('canchas').doc();
-      batch.set(docRef, venue);
-    }
-    await batch.commit();
-    debugPrint("✅ Canchas subidas a Firebase correctamente");
   }
 
   @override
@@ -273,8 +178,7 @@ class _CrearScreenState extends State<CrearScreen> {
       if (_selectedSport == null) {
         sportMatch = true;
       } else if (_selectedSport == 'Ultimate') {
-        sportMatch =
-            (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol');
+        sportMatch = (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol');
       } else {
         sportMatch = venue['sport'] == _selectedSport;
       }
@@ -291,7 +195,6 @@ class _CrearScreenState extends State<CrearScreen> {
 
   void _onMapCreated(MapboxMap mapboxMap) {
     this.mapboxMap = mapboxMap;
-
     mapboxMap.setCamera(CameraOptions(
         center: Point(coordinates: Position(-76.5227, 3.3536)),
         zoom: 13.5,
@@ -300,10 +203,8 @@ class _CrearScreenState extends State<CrearScreen> {
 
     mapboxMap.loadStyleURI(MapboxStyles.MAPBOX_STREETS).then((_) {
       _add3DBuildings();
-
       mapboxMap.annotations.createPointAnnotationManager().then((manager) {
         pointAnnotationManager = manager;
-
         pointAnnotationManager!.addOnPointAnnotationClickListener(
             AnnotationClickListener(onAnnotationClick: (annotation) {
           final lat = annotation.geometry.coordinates.lat;
@@ -354,13 +255,12 @@ class _CrearScreenState extends State<CrearScreen> {
 
     List<PointAnnotationOptions> options = _filteredVenues.map((v) {
       return PointAnnotationOptions(
-        geometry:
-            Point(coordinates: Position(v['lng'] as num, v['lat'] as num)),
-        iconImage: "marker-15", // 📍 ESTO FUERZA AL MAPA A DIBUJAR UN PIN
-        iconSize: 1.8, // Tamaño del pin
-        textField: v['name'], // Texto que saldrá abajo
+        geometry: Point(coordinates: Position(v['lng'] as num, v['lat'] as num)),
+        iconImage: "marker-15",
+        iconSize: 1.8,
+        textField: v['name'],
         textSize: 13.0,
-        textOffset: [0.0, 1.2], // Ajustamos para que no pise el pin
+        textOffset: [0.0, 1.2],
         textColor: Colors.black.toARGB32(),
         textHaloColor: Colors.white.toARGB32(),
         textHaloWidth: 2.0,
@@ -369,7 +269,6 @@ class _CrearScreenState extends State<CrearScreen> {
 
     if (options.isNotEmpty) {
       await pointAnnotationManager!.createMulti(options);
-
       if (_filteredVenues.isNotEmpty) {
         mapboxMap?.flyTo(
             CameraOptions(
@@ -398,104 +297,42 @@ class _CrearScreenState extends State<CrearScreen> {
     if (picked != null) setState(() => selectedTime = picked);
   }
 
-  Future<void> _crearPartido() async {
+  Future<void> _crearEvento() async {
     if (!_isFormValid) return;
-
     setState(() => _isLoading = true);
 
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Debes iniciar sesion para crear un partido.')),
-        );
-        return;
-      }
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-      final userData = userDoc.data();
-      final dbName = userData?['name'];
-      final dbPhoto = userData?['photoUrl'];
-      final creatorName = dbName is String && dbName.isNotEmpty
-          ? dbName
-          : currentUser.displayName ?? 'Organizador';
-      final creatorPhotoUrl = dbPhoto is String && dbPhoto.isNotEmpty
-          ? dbPhoto
-          : currentUser.photoURL ?? '';
-      final creatorId = currentUser.uid;
+      final dateString = "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year} - ${selectedTime!.format(context)}";
 
-      final DateTime fullDateTime = DateTime(
-        selectedDate!.year,
-        selectedDate!.month,
-        selectedDate!.day,
-        selectedTime!.hour,
-        selectedTime!.minute,
-      );
-
-      final firestore = FirebaseFirestore.instance;
-      final matchRef = firestore.collection('matches').doc();
-      final userAgendaRef = firestore
-          .collection('users')
-          .doc(creatorId)
-          .collection('agenda')
-          .doc(matchRef.id);
-      final playerRef = matchRef.collection('players').doc(creatorId);
-      final batch = firestore.batch();
-
-      batch.set(matchRef, {
+      final eventData = {
         'title': nameController.text.trim(),
         'sport': _selectedSport,
         'location': _selectedLocation,
-        'date': Timestamp.fromDate(fullDateTime),
-        'joinedSlots': 1,
+        'date': dateString, 
+        'price': '\$$price COP',
+        // 🔹 Si hay URL subida la usa, si no, usa la default
+        'image': _eventImageUrl ?? 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=1200&auto=format&fit=crop',
+        'status': _status,
+        'isFeatured': _isFeatured,
+        'joinedSlots': 0,
         'totalSlots': players,
-        'price': price,
         'createdAt': FieldValue.serverTimestamp(),
-        'creatorName': creatorName,
-        'creatorId': creatorId,
-      });
+      };
 
-      batch.set(userAgendaRef, {
-        'matchId': matchRef.id,
-        'title': nameController.text.trim(),
-        'date': Timestamp.fromDate(fullDateTime),
-        'sport': _selectedSport,
-        'location': _selectedLocation,
-      });
-
-      batch.set(playerRef, {
-        'name': creatorName,
-        'email': currentUser.email ?? '',
-        'photoUrl': creatorPhotoUrl,
-        'rating': 5.0,
-        'joinedAt': FieldValue.serverTimestamp(),
-      });
-
-      await batch.commit();
+      await FirebaseFirestore.instance.collection('events').add(eventData);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Partido creado y publicado'),
+            content: Text('Evento publicado exitosamente'),
             backgroundColor: Colors.green),
       );
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-            builder: (context) =>
-                const MainNavigationScreen(initialIndex: 2)), // 2 es la Agenda
-        (route) => false,
-      );
+      Navigator.pop(context); // Regresa a la lista de eventos
     } catch (e) {
-      debugPrint("Error al crear partido: $e");
+      debugPrint("Error al crear evento: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Error al crear: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Error al crear: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -509,22 +346,27 @@ class _CrearScreenState extends State<CrearScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Crear Partido',
+        title: const Text('Crear Evento',
             style: TextStyle(
                 color: Color(0xFF111827), fontWeight: FontWeight.w700)),
         iconTheme: const IconThemeData(color: Color(0xFF111827)),
       ),
       body: _isLoadingVenues
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+              child: CircularProgressIndicator(color: Color(0xFF155DFC)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _label('Nombre del Partido'),
+                  _label('Nombre del Evento'),
                   const SizedBox(height: 8),
-                  _input(),
+                  _input(nameController, 'Ej. Torneo de Verano'),
+
+                  const SizedBox(height: 24),
+                  _label('Imagen del Evento (Opcional)'),
+                  const SizedBox(height: 8),
+                  _buildImageUploader(), // 🔹 NUEVO WIDGET AQUÍ
 
                   const SizedBox(height: 24),
                   _label('Selecciona el Deporte'),
@@ -534,24 +376,15 @@ class _CrearScreenState extends State<CrearScreen> {
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
-                        'Fútbol',
-                        'Baloncesto',
-                        'Tenis',
-                        'Ultimate',
-                        'Vóley'
+                        'Fútbol', 'Baloncesto', 'Tenis', 'Ultimate', 'Vóley'
                       ].map((sport) {
                         final emojis = {
-                          'Fútbol': '⚽',
-                          'Baloncesto': '🏀',
-                          'Tenis': '🎾',
-                          'Ultimate': '🥏',
-                          'Vóley': '🏐'
+                          'Fútbol': '⚽', 'Baloncesto': '🏀', 'Tenis': '🎾',
+                          'Ultimate': '🥏', 'Vóley': '🏐'
                         };
                         final colors = {
-                          'Fútbol': Colors.green,
-                          'Baloncesto': Colors.orange,
-                          'Tenis': Colors.red,
-                          'Ultimate': Colors.blue,
+                          'Fútbol': Colors.green, 'Baloncesto': Colors.orange,
+                          'Tenis': Colors.red, 'Ultimate': Colors.blue,
                           'Vóley': Colors.deepPurple
                         };
                         return GestureDetector(
@@ -576,17 +409,17 @@ class _CrearScreenState extends State<CrearScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _label('Lugar del Partido'),
+                      _label('Lugar del Evento'),
                       if (_selectedLocation != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.1),
+                              color: const Color(0xFF155DFC).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8)),
                           child: Text(_selectedLocation!,
                               style: const TextStyle(
-                                  color: Colors.green,
+                                  color: Color(0xFF155DFC),
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold)),
                         ),
@@ -598,11 +431,7 @@ class _CrearScreenState extends State<CrearScreen> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        'Norte',
-                        'Sur',
-                        'Centro',
-                        'Oriente',
-                        'Occidente'
+                        'Norte', 'Sur', 'Centro', 'Oriente', 'Occidente'
                       ].map((zone) {
                         final isSelected = _selectedZone == zone;
                         return Padding(
@@ -615,7 +444,7 @@ class _CrearScreenState extends State<CrearScreen> {
                                         ? Colors.white
                                         : Colors.black87)),
                             selected: isSelected,
-                            selectedColor: const Color(0xFF2E7D32),
+                            selectedColor: const Color(0xFF155DFC),
                             backgroundColor: Colors.white,
                             onSelected: (selected) {
                               setState(
@@ -629,10 +458,9 @@ class _CrearScreenState extends State<CrearScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // 🔹 MAPA PEQUEÑO (VISTA PREVIA SEGURA CONTRA GESTOS)
+                  // 🔹 MAPA PEQUEÑO (Con textureView activado)
                   GestureDetector(
-                    onTap:
-                        _abrirMapaCompleto, // Al tocar cualquier parte, se abre completo
+                    onTap: _abrirMapaCompleto,
                     child: Container(
                       height: 250,
                       decoration: BoxDecoration(
@@ -648,14 +476,13 @@ class _CrearScreenState extends State<CrearScreen> {
                       clipBehavior: Clip.antiAlias,
                       child: Stack(
                         children: [
-                          // AbsorbPointer evita el conflicto de scroll con la pantalla principal
                           AbsorbPointer(
                             child: MapWidget(
-                              key: const ValueKey("mapboxMap_small"),
+                              key: const ValueKey("mapboxMapEvent_small"),
+                              textureView: true, 
                               styleUri: MapboxStyles.MAPBOX_STREETS,
                               onMapCreated: (MapboxMap map) {
                                 _onMapCreated(map);
-                                // Escondemos los controles por defecto para que luzca limpio
                                 map.compass.updateSettings(
                                     CompassSettings(enabled: false));
                                 map.scaleBar.updateSettings(
@@ -664,9 +491,7 @@ class _CrearScreenState extends State<CrearScreen> {
                             ),
                           ),
                           Positioned(
-                            top: 15,
-                            left: 15,
-                            right: 15,
+                            top: 15, left: 15, right: 15,
                             child: Container(
                               height: 45,
                               padding:
@@ -680,7 +505,7 @@ class _CrearScreenState extends State<CrearScreen> {
                                   ]),
                               child: const Row(
                                 children: [
-                                  Icon(Icons.search, color: Colors.green),
+                                  Icon(Icons.search, color: Color(0xFF155DFC)),
                                   SizedBox(width: 10),
                                   Text(
                                       'Toca para buscar en pantalla completa...',
@@ -691,10 +516,9 @@ class _CrearScreenState extends State<CrearScreen> {
                             ),
                           ),
                           Positioned(
-                            bottom: 10,
-                            right: 10,
+                            bottom: 10, right: 10,
                             child: FloatingActionButton.small(
-                              heroTag: "expandBtn",
+                              heroTag: "expandBtnEvent",
                               backgroundColor: Colors.black87,
                               onPressed: _abrirMapaCompleto,
                               child: const Icon(Icons.fullscreen,
@@ -730,12 +554,65 @@ class _CrearScreenState extends State<CrearScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  _label('Número de Jugadores'),
+                  _label('Cupos de Jugadores'),
                   _counterBox(),
 
                   const SizedBox(height: 24),
-                  _label('Precio por Jugador'),
+                  _label('Precio de Inscripción'),
                   _priceBox(),
+
+                  const SizedBox(height: 32),
+
+                  _label('Estado del Evento'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Text('Próximo', style: TextStyle(fontSize: 14)),
+                          value: 'upcoming',
+                          groupValue: _status,
+                          contentPadding: EdgeInsets.zero,
+                          activeColor: const Color(0xFF155DFC),
+                          onChanged: (val) => setState(() => _status = val!),
+                        ),
+                      ),
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Text('En Curso', style: TextStyle(fontSize: 14)),
+                          value: 'ongoing',
+                          groupValue: _status,
+                          contentPadding: EdgeInsets.zero,
+                          activeColor: const Color(0xFF155DFC),
+                          onChanged: (val) => setState(() => _status = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: SwitchListTile(
+                      title: const Text("Destacar Evento", style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(widget.isAdmin 
+                        ? "Aparecerá gigante en la pantalla." 
+                        : "Solo los administradores pueden destacar."),
+                      value: _isFeatured,
+                      activeColor: const Color(0xFFFF6900),
+                      secondary: Icon(
+                        Icons.star, 
+                        color: widget.isAdmin ? const Color(0xFFFF6900) : Colors.grey
+                      ),
+                      onChanged: widget.isAdmin 
+                        ? (bool value) => setState(() => _isFeatured = value)
+                        : null,
+                    ),
+                  ),
 
                   const SizedBox(height: 80),
                 ],
@@ -747,6 +624,69 @@ class _CrearScreenState extends State<CrearScreen> {
 
   // --- WIDGETS DE APOYO ---
 
+  // 🔹 WIDGET DE IMAGEN INTEGRADO
+  Widget _buildImageUploader() {
+    return GestureDetector(
+      onTap: _isUploadingImage ? null : _pickAndUploadEventImage,
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE5E7EB), width: 2),
+          image: _eventImageUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(_eventImageUrl!),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: _isUploadingImage
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF155DFC)),
+              )
+            : _eventImageUrl == null
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_photo_alternate_rounded,
+                        size: 50,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Añadir foto del evento (Opcional)",
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  )
+                : Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+      ),
+    );
+  }
+
   Widget _buildBottomButton() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -757,18 +697,18 @@ class _CrearScreenState extends State<CrearScreen> {
         height: 58,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: const Color(0xFF155DFC), // Color de Eventos
             disabledBackgroundColor: Colors.grey.shade300,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          onPressed: (_isLoading || !_isFormValid) ? null : _crearPartido,
+          onPressed: (_isLoading || !_isFormValid) ? null : _crearEvento,
           child: _isLoading
               ? const CircularProgressIndicator(color: Colors.white)
               : Text(
                   _isFormValid
-                      ? 'CREAR PARTIDO'
-                      : 'COMPLETE TODOS LOS CAMPOS PARA CREAR',
+                      ? 'PUBLICAR EVENTO'
+                      : 'COMPLETE TODOS LOS CAMPOS',
                   style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -786,7 +726,7 @@ class _CrearScreenState extends State<CrearScreen> {
               fontWeight: FontWeight.w700,
               color: Color(0xFF364153))));
 
-  Widget _input() => Container(
+  Widget _input(TextEditingController controller, String hint) => Container(
         height: 54,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
@@ -794,10 +734,10 @@ class _CrearScreenState extends State<CrearScreen> {
             border: Border.all(color: const Color(0xFFE5E7EB)),
             borderRadius: BorderRadius.circular(14)),
         child: TextField(
-            controller: nameController,
+            controller: controller,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-                border: InputBorder.none, hintText: 'Escribe el nombre')),
+            decoration: InputDecoration(
+                border: InputBorder.none, hintText: hint)),
       );
 
   Widget _dateBox(
@@ -856,7 +796,7 @@ class _CrearScreenState extends State<CrearScreen> {
           width: 40,
           height: 40,
           decoration: const BoxDecoration(
-              color: Color(0xFF2E7D32), shape: BoxShape.circle),
+              color: Color(0xFF155DFC), shape: BoxShape.circle),
           child: Icon(icon, color: Colors.white, size: 20)));
 
   Widget _priceBox() => Container(
@@ -871,7 +811,7 @@ class _CrearScreenState extends State<CrearScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(
               fontSize: 28,
-              color: Color(0xFF2E7D32),
+              color: Color(0xFF155DFC),
               fontWeight: FontWeight.bold),
           decoration: const InputDecoration(
               prefixText: '\$ ', suffixText: ' COP', border: InputBorder.none),
@@ -920,23 +860,23 @@ class AnnotationClickListener extends OnPointAnnotationClickListener {
 }
 
 // =========================================================
-// 🌍 PANTALLA DE MAPA COMPLETO (SIN CONFLICTO DE GESTOS)
+// 🌍 PANTALLA DE MAPA COMPLETO
 // =========================================================
-class MapaPantallaCompletaScreen extends StatefulWidget {
+class MapaPantallaCompletaEventoScreen extends StatefulWidget {
   final List<Map<String, dynamic>> venues;
   final String? selectedSport;
   final String? selectedZone;
 
-  const MapaPantallaCompletaScreen(
+  const MapaPantallaCompletaEventoScreen(
       {super.key, required this.venues, this.selectedSport, this.selectedZone});
 
   @override
-  State<MapaPantallaCompletaScreen> createState() =>
-      _MapaPantallaCompletaScreenState();
+  State<MapaPantallaCompletaEventoScreen> createState() =>
+      _MapaPantallaCompletaEventoScreenState();
 }
 
-class _MapaPantallaCompletaScreenState
-    extends State<MapaPantallaCompletaScreen> {
+class _MapaPantallaCompletaEventoScreenState
+    extends State<MapaPantallaCompletaEventoScreen> {
   MapboxMap? mapboxMap;
   PointAnnotationManager? pointAnnotationManager;
   String _searchQuery = "";
@@ -1000,7 +940,6 @@ class _MapaPantallaCompletaScreenState
           );
           if (clickedVenue.isEmpty) return false;
 
-          // 🔹 DEVOLVEMOS EL RESULTADO AL CERRAR LA PANTALLA
           Navigator.pop(context, clickedVenue);
           return true;
         }));
@@ -1049,7 +988,8 @@ class _MapaPantallaCompletaScreenState
       body: Stack(
         children: [
           MapWidget(
-              key: const ValueKey("mapboxMap_fullscreen"),
+              key: const ValueKey("mapboxMapEvent_fullscreen"),
+              textureView: true, 
               styleUri: MapboxStyles.MAPBOX_STREETS,
               onMapCreated: _onMapCreated),
           SafeArea(
@@ -1058,7 +998,7 @@ class _MapaPantallaCompletaScreenState
               child: Row(
                 children: [
                   FloatingActionButton(
-                    heroTag: "backBtn",
+                    heroTag: "backBtnEvent",
                     mini: true,
                     backgroundColor: Colors.white,
                     child: const Icon(Icons.arrow_back, color: Colors.black),
@@ -1082,8 +1022,8 @@ class _MapaPantallaCompletaScreenState
                           _updateMapMarkers();
                         },
                         decoration: const InputDecoration(
-                            icon: Icon(Icons.search, color: Colors.green),
-                            hintText: 'Buscar cancha por nombre...',
+                            icon: Icon(Icons.search, color: Color(0xFF155DFC)),
+                            hintText: 'Buscar lugar por nombre...',
                             border: InputBorder.none),
                       ),
                     ),

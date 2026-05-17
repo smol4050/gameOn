@@ -19,10 +19,18 @@ class PerfilScreen extends StatefulWidget {
 }
 
 class _PerfilScreenState extends State<PerfilScreen> {
+  // 🔹 VARIABLES DE ESTADO DEL USUARIO
   String name = 'Cargando...';
   String level = 'NA';
   String favoriteSport = 'Cargando...';
   String? photoUrl;
+  
+  // 🔹 VARIABLES DE ESTADÍSTICAS Y REPUTACIÓN
+  String rating = '5.0';
+  List<String> reputationTags = ['Buen compañero', 'Puntual', 'Juego limpio'];
+  int matchesPlayed = 0;
+  int eventsParticipated = 0;
+  Map<String, dynamic>? lastMatch;
 
   bool _isLoading = true;
   bool _isUploading = false;
@@ -33,28 +41,66 @@ class _PerfilScreenState extends State<PerfilScreen> {
     _loadUserData();
   }
 
+  // 🚀 CARGA TODO DESDE FIREBASE
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null) {
+    if (user == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      // 1. Cargar datos básicos del usuario
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
-      if (doc.exists && mounted) {
+      // 2. Cargar historial desde su agenda para la actividad
+      final agendaRef = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('agenda')
+          .get();
+
+      int mCount = agendaRef.docs.length;
+      Map<String, dynamic>? lMatch;
+      
+      if (mCount > 0) {
+        // Tomamos el último partido al que se unió
+        lMatch = agendaRef.docs.last.data(); 
+      }
+
+      if (mounted) {
+        final data = doc.data() ?? {};
         setState(() {
-          name = doc.data()?['name'] ?? 'Usuario';
-          level = doc.data()?['level'] ?? 'NA';
-          favoriteSport =
-              doc.data()?['sport'] ?? 'Voley';
-          photoUrl = doc.data()?['photoUrl'];
+          name = data['name'] ?? user.displayName ?? 'Usuario';
+          level = data['level'] ?? 'NA';
+          favoriteSport = data['sport'] ?? 'Fútbol';
+          photoUrl = data['photoUrl'] ?? user.photoURL;
+          
+          // Novedades desde DB
+          rating = data['rating']?.toString() ?? '5.0';
+          if (data['reputationTags'] != null) {
+            reputationTags = List<String>.from(data['reputationTags']);
+          }
+          eventsParticipated = data['eventsParticipated'] ?? 0;
+          
+          // Datos de agenda
+          matchesPlayed = mCount;
+          lastMatch = lMatch;
+
           _isLoading = false;
         });
       }
+    } catch (e) {
+      debugPrint('Error cargando perfil: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // 🚀 SUBIR FOTO DE PERFIL
   Future<void> _processAndUploadImage() async {
     final picker = ImagePicker();
 
@@ -68,7 +114,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
     try {
       final tempDir = await getTemporaryDirectory();
-
       final targetPath =
           "${tempDir.path}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg";
 
@@ -82,26 +127,128 @@ class _PerfilScreenState extends State<PerfilScreen> {
       );
 
       if (compressedFile != null) {
-        final String? url =
-            await ImageService.uploadImage(
+        final String? url = await ImageService.uploadImage(
           File(compressedFile.path),
         );
 
         if (url != null) {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser == null) return;
           await FirebaseFirestore.instance
               .collection('users')
-              .doc(FirebaseAuth
-                  .instance.currentUser!.uid)
+              .doc(currentUser.uid)
               .update({'photoUrl': url});
 
-          setState(() => photoUrl = url);
+          if (mounted) setState(() => photoUrl = url);
         }
       }
     } catch (e) {
       debugPrint("Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('No pudimos actualizar la foto: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
+  }
+
+  // 🚀 DIÁLOGO PARA EDITAR PERFIL
+  void _showEditProfileDialog() {
+    final nameCtrl = TextEditingController(text: name);
+    String tempSport = favoriteSport;
+    String tempLevel = level;
+
+    // Si el nivel guardado no es uno de la lista, forzamos uno por defecto
+    if (!['Principiante', 'Intermedio', 'Avanzado', 'Pro'].contains(tempLevel)) {
+      tempLevel = 'Intermedio';
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('Editar Perfil', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Nombre',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: tempSport,
+                      decoration: InputDecoration(
+                        labelText: 'Deporte Favorito',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: ['Fútbol', 'Baloncesto', 'Tenis', 'Vóley', 'Ultimate']
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (val) => setStateDialog(() => tempSport = val!),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: tempLevel,
+                      decoration: InputDecoration(
+                        labelText: 'Nivel',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: ['Principiante', 'Intermedio', 'Avanzado', 'Pro']
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (val) => setStateDialog(() => tempLevel = val!),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                  ),
+                  onPressed: () async {
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+                        'name': nameCtrl.text.trim(),
+                        'sport': tempSport,
+                        'level': tempLevel,
+                      });
+                      
+                      // Actualiza la pantalla de fondo
+                      setState(() {
+                        name = nameCtrl.text.trim();
+                        favoriteSport = tempSport;
+                        level = tempLevel;
+                      });
+                    }
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: const Text('Guardar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
   }
 
   @override
@@ -124,13 +271,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
           child: Column(
             children: [
               _buildHeader(),
-
               const SizedBox(height: 20),
-
               _buildAvatar(),
-
               const SizedBox(height: 20),
-
               Text(
                 name,
                 style: const TextStyle(
@@ -139,21 +282,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   color: AppColors.primary,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               _buildBadgeInfo(),
-
               const SizedBox(height: 34),
-
               _buildStatsSection(),
-
               const SizedBox(height: 26),
-
               _buildReputationSection(),
-
               const SizedBox(height: 26),
-
               _settingsSection(context),
             ],
           ),
@@ -162,81 +297,71 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // HEADER
+  // 🔹 HEADER
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        24,
-        24,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius:
-                  BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      Colors.black.withValues(
-                    alpha: 0.04,
-                  ),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 18,
+          // BOTÓN REGRESAR
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+              ),
             ),
           ),
-
-          Container(
-            padding:
-                const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius:
-                  BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      Colors.black.withValues(
-                    alpha: 0.05,
-                  ),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.edit_outlined,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Editar',
-                  style: TextStyle(
+          
+          // BOTÓN EDITAR
+          GestureDetector(
+            onTap: _showEditProfileDialog,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.edit_outlined,
                     color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                    size: 18,
                   ),
-                )
-              ],
+                  SizedBox(width: 8),
+                  Text(
+                    'Editar',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                ],
+              ),
             ),
           )
         ],
@@ -244,14 +369,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // AVATAR
+  // 🔹 AVATAR
 
   Widget _buildAvatar() {
     return GestureDetector(
-      onTap:
-          _isUploading
-              ? null
-              : _processAndUploadImage,
+      onTap: _isUploading ? null : _processAndUploadImage,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -267,49 +389,39 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      Colors.black.withValues(
-                    alpha: 0.06,
-                  ),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 )
               ],
             ),
             child: ClipOval(
-              child:
-                  photoUrl != null
-                      ? Image.network(
-                        photoUrl!,
-                        fit: BoxFit.cover,
-                      )
-                      : const Icon(
-                        Icons.person,
-                        size: 70,
-                        color: Colors.grey,
-                      ),
+              child: photoUrl != null && photoUrl!.isNotEmpty
+                  ? Image.network(
+                      photoUrl!,
+                      fit: BoxFit.cover,
+                    )
+                  : const Icon(
+                      Icons.person,
+                      size: 70,
+                      color: Colors.grey,
+                    ),
             ),
           ),
-
           if (_isUploading)
             Container(
               width: 130,
               height: 130,
               decoration: BoxDecoration(
-                color:
-                    Colors.black.withValues(
-                  alpha: 0.35,
-                ),
+                color: Colors.black.withValues(alpha: 0.35),
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child:
-                    CircularProgressIndicator(
+                child: CircularProgressIndicator(
                   color: Colors.white,
                 ),
               ),
             ),
-
           Positioned(
             bottom: 6,
             right: 6,
@@ -336,20 +448,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // BADGES
+  // 🔹 BADGES
 
   Widget _buildBadgeInfo() {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _badge(
           'Nivel $level 🔥',
           Colors.orange,
         ),
-
         const SizedBox(width: 12),
-
         _badge(
           favoriteSport,
           Colors.blue,
@@ -358,20 +467,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  Widget _badge(
-    String text,
-    Color color,
-  ) {
+  Widget _badge(String text, Color color) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius:
-            BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Text(
         text,
@@ -383,17 +484,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // STATS
+  // 🔹 STATS (Actividad)
 
   Widget _buildStatsSection() {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 24,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Actividad',
@@ -402,47 +499,34 @@ class _PerfilScreenState extends State<PerfilScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 18),
-
           _statCard(
             'Partidos jugados',
-            '27',
+            matchesPlayed.toString(),
             Icons.sports_soccer,
           ),
-
           const SizedBox(height: 16),
-
           _statCard(
-            'Eventos creados',
-            '8',
-            Icons.event,
+            'Eventos participados',
+            eventsParticipated.toString(),
+            Icons.emoji_events_rounded,
           ),
-
           const SizedBox(height: 16),
-
           _lastMatchCard(),
         ],
       ),
     );
   }
 
-  Widget _statCard(
-    String title,
-    String value,
-    IconData icon,
-  ) {
+  Widget _statCard(String title, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.04,
-            ),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 6),
           )
@@ -454,19 +538,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
             width: 58,
             height: 58,
             decoration: BoxDecoration(
-              color: AppColors.primary
-                  .withValues(alpha: 0.12),
-              borderRadius:
-                  BorderRadius.circular(18),
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
               icon,
               color: AppColors.primary,
             ),
           ),
-
           const SizedBox(width: 18),
-
           Expanded(
             child: Text(
               title,
@@ -476,7 +556,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
             ),
           ),
-
           Text(
             value,
             style: const TextStyle(
@@ -490,41 +569,53 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  // Inteligencia agregada: Toma los datos de Firestore
   Widget _lastMatchCard() {
+    // Valores por defecto
+    String sportText = favoriteSport;
+    String dateText = 'Aún no has jugado';
+
+    // Si encontró algo en la agenda, lo mapea
+    if (lastMatch != null) {
+      sportText = lastMatch!['sport'] ?? sportText;
+      
+      // Si la fecha la guardas como String o Timestamp
+      if (lastMatch!['date'] is Timestamp) {
+        final dateObj = (lastMatch!['date'] as Timestamp).toDate();
+        dateText = "${dateObj.day}/${dateObj.month}/${dateObj.year}";
+      } else {
+        dateText = lastMatch!['date']?.toString() ?? 'Fecha desconocida';
+      }
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.04,
-            ),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 6),
           )
         ],
       ),
-      child: const Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Último partido',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
           ),
-
-          SizedBox(height: 10),
-
+          const SizedBox(height: 10),
           Text(
-            'Fútbol • 24 Abril 2026',
-            style: TextStyle(
+            '$sportText • $dateText',
+            style: const TextStyle(
               color: AppColors.textSecondary,
             ),
           )
@@ -533,26 +624,20 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // REPUTACIÓN
+  // 🔹 REPUTACIÓN
 
   Widget _buildReputationSection() {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 24,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(26),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius:
-              BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(
-                alpha: 0.04,
-              ),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             )
@@ -567,34 +652,21 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-
             const SizedBox(height: 18),
-
-            const Text(
-              '4.9',
-              style: TextStyle(
+            Text(
+              rating, // 🚀 Variable dinámica leída de Firestore
+              style: const TextStyle(
                 fontSize: 52,
                 fontWeight: FontWeight.w900,
                 color: AppColors.primary,
               ),
             ),
-
             const SizedBox(height: 20),
-
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: [
-                _reputationTag(
-                  'Buen compañero',
-                ),
-                _reputationTag(
-                  'Puntual',
-                ),
-                _reputationTag(
-                  'Juego limpio',
-                ),
-              ],
+              // 🚀 Mapea las etiquetas guardadas en DB
+              children: reputationTags.map((tag) => _reputationTag(tag)).toList(),
             )
           ],
         ),
@@ -604,15 +676,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Widget _reputationTag(String text) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius:
-            BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Text(
         text,
@@ -623,61 +690,81 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
-  // SETTINGS
+  // 🔹 SETTINGS (Ayuda y Cerrar sesión)
 
-  Widget _settingsSection(
-    BuildContext context,
-  ) {
+  Widget _settingsSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius:
-              BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(
-                alpha: 0.04,
-              ),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 6),
             )
           ],
         ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 8,
-          ),
-          onTap: () async {
-            await AuthService().signOut();
-
-            if (!mounted) return;
-
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) =>
-                        const LoginScreen(),
+        child: Column(
+          children: [
+            // BOTÓN DE AYUDA
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Soporte en construcción 🛠️'),
+                    backgroundColor: AppColors.primary,
+                  ),
+                );
+              },
+              title: const Text(
+                'Ayuda y Soporte',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                ),
               ),
-              (r) => false,
-            );
-          },
-          title: const Text(
-            'Cerrar sesión',
-            style: TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.w700,
-              fontSize: 17,
+              trailing: const Icon(
+                Icons.help_outline_rounded,
+                color: AppColors.primary,
+              ),
             ),
-          ),
-          trailing: const Icon(
-            Icons.logout_rounded,
-            color: Colors.red,
-          ),
+            
+            const Divider(height: 1, indent: 24, endIndent: 24, color: Color(0xFFF3F4F6)),
+
+            // BOTÓN DE CERRAR SESIÓN
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              onTap: () async {
+                await AuthService().signOut();
+                if (!context.mounted) return;
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LoginScreen(),
+                  ),
+                  (r) => false,
+                );
+              },
+              title: const Text(
+                'Cerrar sesión',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.logout_rounded,
+                color: Colors.red,
+              ),
+            ),
+          ],
         ),
       ),
     );

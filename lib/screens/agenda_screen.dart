@@ -1,106 +1,117 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart'; // <--- AGREGA ESTA LÍNEA
+import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import 'confirmar_unirse_screen.dart';
+import 'chat_list_screen.dart';
 
 class AgendaScreen extends StatelessWidget {
   const AgendaScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userId =
-        FirebaseAuth.instance.currentUser?.uid;
+    final size = MediaQuery.sizeOf(context);
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final pagePadding = screenWidth * 0.055;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-
-            Expanded(
-              child:
-                  userId == null
-                      ? const Center(
-                        child:
-                            CircularProgressIndicator(
-                              color:
-                                  AppColors.primary,
-                            ),
-                      )
-                      : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(userId)
-                  .collection('agenda')
-                  .orderBy('date', descending: false) // Más cercano primero
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-                final allEvents = snapshot.data!.docs;
-                final now = DateTime.now();
-                // final today = DateTime(now.year, now.month, now.day);
-
-                // Separar eventos
-               final todayStart = DateTime(now.year, now.month, now.day);
-                final tomorrowStart = todayStart.add(const Duration(days: 1));
-
-                // Filtros con validación de seguridad (evita que la app se cierre si falta una fecha)
-               final todayEvents = allEvents.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final dateValue = data['date'];
-                  
-                  // Si no es un Timestamp (es String o null), lo ignoramos para no romper la app
-                  if (dateValue is! Timestamp) return false;
-
-                  final date = dateValue.toDate();
-                  return DateTime(date.year, date.month, date.day).isAtSameMomentAs(todayStart);
-                }).toList();
-
-                // Filtro para PRÓXIMOS 
-                final upcomingEvents = allEvents.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final dateValue = data['date'];
-
-                  if (dateValue is! Timestamp) return false;
-
-                  final date = dateValue.toDate();
-                  return date.isAfter(tomorrowStart) || date.isAtSameMomentAs(tomorrowStart);
-                }).toList();
-
-                return ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    if (todayEvents.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Text("Hoy tienes este evento", 
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                      ),
-                      ...todayEvents.map((doc) => _buildAgendaCard(context, doc)).toList(),
-                    ],
-                    if (upcomingEvents.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: Text("Eventos próximos", 
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                      ),
-                      ...upcomingEvents.map((doc) => _buildAgendaCard(context, doc)).toList(),
-                    ],
-                    if (allEvents.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 80),
-                        child: _emptyState(),
-                      ),
-                  ],
-                );
-              },
+            _buildHeader(
+              context,
+              screenWidth: screenWidth,
+              screenHeight: screenHeight,
+              padding: pagePadding,
             ),
+            Expanded(
+              child: userId == null
+                  ? const Center(
+                      child: Text('Inicia sesion para ver tu agenda.'))
+                  : StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(userId)
+                          .collection('agenda')
+                          .orderBy('date', descending: false)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return const Center(
+                              child: Text('No pudimos cargar tu agenda.'));
+                        }
+                        if (!snapshot.hasData) {
+                          return const Center(
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primary));
+                        }
+
+                        final allEvents = snapshot.data!.docs;
+                        final now = DateTime.now();
+                        final todayStart =
+                            DateTime(now.year, now.month, now.day);
+                        final tomorrowStart =
+                            todayStart.add(const Duration(days: 1));
+
+                        final todayEvents = allEvents.where((doc) {
+                          final data = doc.data();
+                          if (data is! Map<String, dynamic>) return false;
+                          final dateValue = data['date'];
+                          if (dateValue is! Timestamp) return false;
+                          final date = dateValue.toDate();
+                          return DateTime(date.year, date.month, date.day)
+                              .isAtSameMomentAs(todayStart);
+                        }).toList();
+
+                        final upcomingEvents = allEvents.where((doc) {
+                          final data = doc.data();
+                          if (data is! Map<String, dynamic>) return false;
+                          final dateValue = data['date'];
+                          if (dateValue is! Timestamp) return false;
+                          final date = dateValue.toDate();
+                          return date.isAfter(tomorrowStart) ||
+                              date.isAtSameMomentAs(tomorrowStart);
+                        }).toList();
+
+                        return ListView(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: pagePadding),
+                          children: [
+                            if (todayEvents.isNotEmpty) ...[
+                              _sectionTitle('Hoy tienes este evento',
+                                  screenWidth, screenHeight),
+                              ...todayEvents.map((doc) => _buildAgendaCard(
+                                    context,
+                                    doc,
+                                    screenWidth: screenWidth,
+                                    screenHeight: screenHeight,
+                                  )),
+                            ],
+                            if (upcomingEvents.isNotEmpty) ...[
+                              _sectionTitle('Eventos proximos', screenWidth,
+                                  screenHeight),
+                              ...upcomingEvents.map((doc) => _buildAgendaCard(
+                                    context,
+                                    doc,
+                                    screenWidth: screenWidth,
+                                    screenHeight: screenHeight,
+                                  )),
+                            ],
+                            if (allEvents.isEmpty)
+                              Padding(
+                                padding:
+                                    EdgeInsets.only(top: screenHeight * 0.1),
+                                child: _emptyState(screenWidth, screenHeight),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -108,36 +119,79 @@ class AgendaScreen extends StatelessWidget {
     );
   }
 
-  // HEADER PREMIUM
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        28,
-        24,
-        24,
+  Widget _sectionTitle(String text, double screenWidth, double screenHeight) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.012),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: (screenWidth * 0.045).clamp(16.0, 19.0),
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
       ),
-      child: const Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildHeader(
+    BuildContext context, {
+    required double screenWidth,
+    required double screenHeight,
+    required double padding,
+  }) {
+    final titleSize = (screenWidth * 0.085).clamp(28.0, 35.0);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+          padding, screenHeight * 0.032, padding, screenHeight * 0.028),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Mi Agenda',
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              color: AppColors.primary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mi Agenda',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary,
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.007),
+                Text(
+                  'Tus proximos partidos y eventos',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-
-          SizedBox(height: 6),
-
-          Text(
-            'Tus próximos partidos y eventos',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
+          SizedBox(width: screenWidth * 0.03),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.chat_bubble_outline_rounded,
+                color: AppColors.primary,
+                size: screenWidth * 0.065,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatListScreen()),
+                );
+              },
             ),
           ),
         ],
@@ -145,53 +199,44 @@ class AgendaScreen extends StatelessWidget {
     );
   }
 
-  // EMPTY STATE
-
-  Widget _emptyState() {
+  Widget _emptyState(double screenWidth, double screenHeight) {
+    final iconBox = screenWidth * 0.28;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 40,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 110,
-              height: 110,
+              width: iconBox,
+              height: iconBox,
               decoration: BoxDecoration(
-                color: AppColors.primary
-                    .withValues(alpha: 0.12),
+                color: AppColors.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.event_busy_rounded,
-                size: 50,
+                size: iconBox * 0.45,
                 color: AppColors.primary,
               ),
             ),
-
-            const SizedBox(height: 28),
-
-            const Text(
-              'Aún no te has unido a ningún partido',
+            SizedBox(height: screenHeight * 0.032),
+            Text(
+              'Aun no te has unido a ningun partido',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 22,
+                fontSize: (screenWidth * 0.055).clamp(19.0, 23.0),
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
             ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              'Cuando te unas a un evento aparecerá aquí.',
+            SizedBox(height: screenHeight * 0.012),
+            Text(
+              'Cuando te unas a un evento aparecera aqui.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 15,
+                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
               ),
             ),
           ],
@@ -200,50 +245,53 @@ class AgendaScreen extends StatelessWidget {
     );
   }
 
-  // CARD PREMIUM
+  Widget _buildAgendaCard(
+    BuildContext context,
+    QueryDocumentSnapshot doc, {
+    required double screenWidth,
+    required double screenHeight,
+  }) {
+    final dataRaw = doc.data();
+    if (dataRaw is! Map<String, dynamic>) return const SizedBox.shrink();
 
-Widget _buildAgendaCard(BuildContext context, QueryDocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
     final matchId = doc.id;
-    final title = data['title'] ?? 'Partido';
-    final location = data['location'] ?? 'Ubicación';
-    final sport = data['sport'] ?? 'Deporte';
+    final title = dataRaw['title']?.toString() ?? 'Partido';
+    final location = dataRaw['location']?.toString() ?? 'Ubicacion';
+    final sport = dataRaw['sport']?.toString() ?? 'Deporte';
+    final iconBox = (screenWidth * 0.155).clamp(54.0, 66.0);
 
     String dateStr = 'Fecha pendiente';
     String timeStr = '--:--';
-    
-    if (data['date'] != null && data['date'] is Timestamp) {
-      DateTime dateTime = (data['date'] as Timestamp).toDate();
+
+    if (dataRaw['date'] is Timestamp) {
+      final dateTime = (dataRaw['date'] as Timestamp).toDate();
       dateStr = DateFormat('dd MMMM', 'es').format(dateTime);
       timeStr = DateFormat('hh:mm a').format(dateTime);
-    } else {
-      dateStr = "Error de formato";
-      timeStr = "--:--";
     }
-    
-return GestureDetector(
+
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => ConfirmarUnirseScreen(
               matchId: matchId,
-              matchData: data,
+              matchData: dataRaw,
             ),
           ),
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 22),
-        padding: const EdgeInsets.all(22),
+        margin: EdgeInsets.only(bottom: screenHeight * 0.026),
+        padding: EdgeInsets.all(screenWidth * 0.055),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(screenWidth * 0.07),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
+              blurRadius: screenWidth * 0.035,
+              offset: Offset(0, screenHeight * 0.008),
             ),
           ],
         ),
@@ -253,74 +301,89 @@ return GestureDetector(
             Row(
               children: [
                 Container(
-                  width: 62,
-                  height: 62,
+                  width: iconBox,
+                  height: iconBox,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.sports_soccer,
                     color: AppColors.primary,
-                    size: 30,
+                    size: iconBox * 0.48,
                   ),
                 ),
-                const SizedBox(width: 18),
+                SizedBox(width: screenWidth * 0.045),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 20,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: (screenWidth * 0.05).clamp(17.0, 21.0),
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: screenHeight * 0.007),
                       Text(
                         sport,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: (screenWidth * 0.036).clamp(12.0, 15.0),
                           color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Confirmado',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                Flexible(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.032,
+                      vertical: screenHeight * 0.012,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                    ),
+                    child: Text(
+                      'Confirmado',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                      ),
                     ),
                   ),
                 )
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: screenHeight * 0.028),
             Row(
               children: [
-                const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(
-                  '$dateStr • $timeStr',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                Icon(Icons.calendar_today_rounded,
+                    size: screenWidth * 0.04, color: AppColors.primary),
+                SizedBox(width: screenWidth * 0.02),
+                Expanded(
+                  child: Text(
+                    '$dateStr • $timeStr',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: screenHeight * 0.018),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
+                Icon(Icons.location_on_outlined,
+                    size: screenWidth * 0.045, color: AppColors.primary),
+                SizedBox(width: screenWidth * 0.02),
                 Expanded(
                   child: Text(
                     location,
