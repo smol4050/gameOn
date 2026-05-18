@@ -15,11 +15,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _filtroActivo = 'Todos';
 
+  // 🔹 FIX 1: Se corrigieron las tildes para que hagan match exacto con Firestore
   final List<Map<String, dynamic>> categorias = [
     {'title': 'Todos', 'emoji': '🌍'},
-    {'title': 'Futbol', 'emoji': '⚽'},
+    {'title': 'Fútbol', 'emoji': '⚽'}, 
     {'title': 'Baloncesto', 'emoji': '🏀'},
-    {'title': 'Padel', 'emoji': '🎾'},
+    {'title': 'Pádel', 'emoji': '🎾'}, 
     {'title': 'Tenis', 'emoji': '🎾'},
     {'title': 'Ultimate', 'emoji': '🥏'},
   ];
@@ -95,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: screenHeight * 0.005),
                 Text(
-                  'Encuentra tu proximo partido',
+                  'Encuentra tu próximo partido',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -231,19 +232,30 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
-        if (snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No hay partidos para este deporte'));
+        // 🔹 FIX 2: Filtrar partidos expirados localmente para evitar errores de índices en Firestore
+        final ahora = DateTime.now();
+        final partidosVigentes = snapshot.data!.docs.where((doc) {
+          final rawData = doc.data();
+          if (rawData is! Map<String, dynamic>) return false;
+          
+          if (rawData['date'] is Timestamp) {
+            final fechaPartido = (rawData['date'] as Timestamp).toDate();
+            // Solo mantenemos el partido si es en el futuro
+            return fechaPartido.isAfter(ahora);
+          }
+          return true; // Si no tiene fecha por alguna razón, lo dejamos visible
+        }).toList();
+
+        if (partidosVigentes.isEmpty) {
+          return const Center(child: Text('No hay próximos partidos para este deporte'));
         }
 
         return ListView.builder(
           padding: EdgeInsets.all(padding),
-          itemCount: snapshot.data!.docs.length,
+          itemCount: partidosVigentes.length,
           itemBuilder: (context, index) {
-            final doc = snapshot.data!.docs[index];
-            final rawData = doc.data();
-            if (rawData is! Map<String, dynamic>) {
-              return const SizedBox.shrink();
-            }
+            final doc = partidosVigentes[index];
+            final rawData = doc.data() as Map<String, dynamic>;
 
             return _buildMatchCard(
               rawData,
@@ -257,6 +269,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 🔹 FIX 3: Función para devolver el icono dependiendo del deporte
+  IconData _getSportIcon(String sport) {
+    final lowerSport = sport.toLowerCase();
+    if (lowerSport.contains('futbol') || lowerSport.contains('fútbol')) {
+      return Icons.sports_soccer;
+    } else if (lowerSport.contains('baloncesto') || lowerSport.contains('basket')) {
+      return Icons.sports_basketball;
+    } else if (lowerSport.contains('tenis') || lowerSport.contains('padel') || lowerSport.contains('pádel')) {
+      return Icons.sports_tennis;
+    } else if (lowerSport.contains('ultimate')) {
+      return Icons.animation; // Representación genérica tipo platillo/vuelo
+    }
+    return Icons.sports; // Icono por defecto
+  }
+
   Widget _buildMatchCard(
     Map<String, dynamic> data,
     String docId, {
@@ -265,17 +292,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     final title = data['title']?.toString() ?? 'Partido';
     final sport = data['sport']?.toString() ?? 'Deporte';
-    final location = data['location']?.toString() ?? 'Ubicacion';
+    final location = data['location']?.toString() ?? 'Ubicación';
     final joined = (data['joinedSlots'] as num?)?.toInt() ?? 0;
     final total = ((data['totalSlots'] as num?)?.toInt() ?? 10).clamp(1, 9999);
     final progress = (joined / total).clamp(0.0, 1.0);
     final cardPadding = screenWidth * 0.055;
     final iconSize = (screenWidth * 0.145).clamp(50.0, 64.0);
+    
+    // Obtener el icono correcto
+    final sportIcon = _getSportIcon(sport);
 
     String dateStr = 'Fecha pendiente';
     if (data['date'] is Timestamp) {
       final dateTime = (data['date'] as Timestamp).toDate();
-      dateStr = DateFormat('dd MMMM • hh:mm a', 'es').format(dateTime);
+      dateStr = DateFormat('dd MMM • hh:mm a', 'es').format(dateTime);
     }
 
     return GestureDetector(
@@ -317,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(screenWidth * 0.045),
                   ),
                   child: Icon(
-                    Icons.sports_soccer,
+                    sportIcon, // Usamos el icono dinámico aquí
                     color: AppColors.primary,
                     size: iconSize * 0.52,
                   ),
