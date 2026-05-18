@@ -205,8 +205,7 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
       _add3DBuildings();
       mapboxMap.annotations.createPointAnnotationManager().then((manager) {
         pointAnnotationManager = manager;
-        pointAnnotationManager!.addOnPointAnnotationClickListener(
-            AnnotationClickListener(onAnnotationClick: (annotation) {
+        pointAnnotationManager!.tapEvents(onTap:(annotation) {
           final lat = annotation.geometry.coordinates.lat;
           final lng = annotation.geometry.coordinates.lng;
 
@@ -214,7 +213,8 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
             (v) => v['lat'] == lat && v['lng'] == lng,
             orElse: () => <String, dynamic>{},
           );
-          if (clickedVenue.isEmpty) return false;
+          if (clickedVenue.isEmpty) return;
+
           setState(() => _selectedLocation = clickedVenue['name']);
 
           mapboxMap.flyTo(
@@ -223,8 +223,7 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                   zoom: 16.5,
                   pitch: 60.0),
               MapAnimationOptions(duration: 1500));
-          return true;
-        }));
+        });
 
         if (!_isLoadingVenues) _updateMapMarkers();
       });
@@ -564,29 +563,32 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                   const SizedBox(height: 32),
 
                   _label('Estado del Evento'),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('Próximo', style: TextStyle(fontSize: 14)),
-                          value: 'upcoming',
-                          groupValue: _status,
-                          contentPadding: EdgeInsets.zero,
-                          activeColor: const Color(0xFF155DFC),
-                          onChanged: (val) => setState(() => _status = val!),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment<String>(
+                            value: 'upcoming',
+                            label: Text('Próximo', style: TextStyle(fontSize: 14))),
+                        ButtonSegment<String>(
+                            value: 'ongoing',
+                            label: Text('En Curso', style: TextStyle(fontSize: 14))),
+                      ],
+                      selected: {_status},
+                      onSelectionChanged: (Set<String> newSelection) {
+                        setState(() => _status = newSelection.first);
+                      },
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                          (Set<WidgetState> states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return const Color(0xFF155DFC).withValues(alpha: 0.15);
+                            }
+                            return Colors.white;
+                          },
                         ),
                       ),
-                      Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('En Curso', style: TextStyle(fontSize: 14)),
-                          value: 'ongoing',
-                          groupValue: _status,
-                          contentPadding: EdgeInsets.zero,
-                          activeColor: const Color(0xFF155DFC),
-                          onChanged: (val) => setState(() => _status = val!),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -603,7 +605,8 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                         ? "Aparecerá gigante en la pantalla." 
                         : "Solo los administradores pueden destacar."),
                       value: _isFeatured,
-                      activeColor: const Color(0xFFFF6900),
+                      activeThumbColor: const Color(0xFFFF6900),
+                      activeTrackColor: const Color(0xFFFF6900).withValues(alpha: 0.3),
                       secondary: Icon(
                         Icons.star, 
                         color: widget.isAdmin ? const Color(0xFFFF6900) : Colors.grey
@@ -851,13 +854,7 @@ class _SportCard extends StatelessWidget {
   }
 }
 
-class AnnotationClickListener extends OnPointAnnotationClickListener {
-  final bool Function(PointAnnotation) onAnnotationClick;
-  AnnotationClickListener({required this.onAnnotationClick});
-  @override
-  bool onPointAnnotationClick(PointAnnotation annotation) =>
-      onAnnotationClick(annotation);
-}
+
 
 // =========================================================
 // 🌍 PANTALLA DE MAPA COMPLETO
@@ -930,19 +927,17 @@ class _MapaPantallaCompletaEventoScreenState
 
       mapboxMap.annotations.createPointAnnotationManager().then((manager) {
         pointAnnotationManager = manager;
-        pointAnnotationManager!.addOnPointAnnotationClickListener(
-            AnnotationClickListener(onAnnotationClick: (annotation) {
+        pointAnnotationManager!.tapEvents(onTap:(annotation) {
           final lat = annotation.geometry.coordinates.lat;
           final lng = annotation.geometry.coordinates.lng;
           final clickedVenue = widget.venues.firstWhere(
             (v) => v['lat'] == lat && v['lng'] == lng,
             orElse: () => <String, dynamic>{},
           );
-          if (clickedVenue.isEmpty) return false;
+          if (clickedVenue.isEmpty) return;
 
           Navigator.pop(context, clickedVenue);
-          return true;
-        }));
+        });
         _updateMapMarkers();
       });
     });

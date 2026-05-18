@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import 'chat_screen.dart';
+import 'user_badge_name.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -90,6 +91,9 @@ class ChatListScreen extends StatelessWidget {
                     final otherUserName =
                         userNames[otherUserEmail]?.toString() ??
                             otherUserEmail.split('@')[0];
+                    final userRoles =
+                        rawData['userRoles'] as Map<String, dynamic>? ?? {};
+                    final otherUserRole = userRoles[otherUserEmail]?.toString();
                     final lastMessage =
                         rawData['lastMessage']?.toString() ?? '';
                     final timestamp = rawData['lastMessageTime'] as Timestamp?;
@@ -111,6 +115,7 @@ class ChatListScreen extends StatelessWidget {
                       otherUserName,
                       lastMessage,
                       timeStr,
+                      otherUserRole,
                       screenWidth: screenWidth,
                       screenHeight: screenHeight,
                     );
@@ -126,7 +131,8 @@ class ChatListScreen extends StatelessWidget {
     String email,
     String name,
     String lastMessage,
-    String time, {
+    String time,
+    String? role, {
     required double screenWidth,
     required double screenHeight,
   }) {
@@ -138,7 +144,7 @@ class ChatListScreen extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                ChatScreen(otherUserEmail: email, otherUserName: name),
+                ChatScreen(otherUserEmail: email, otherUserName: name, otherUserRole: role),
           ),
         );
       },
@@ -185,15 +191,14 @@ class ChatListScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
-                          name,
-                          style: TextStyle(
+                        child: UserBadgeName(
+                          name: name,
+                          role: role,
+                          textStyle: TextStyle(
                             fontSize: (screenWidth * 0.043).clamp(15.0, 18.0),
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.02),

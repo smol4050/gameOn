@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../theme/colors.dart';
+import 'user_badge_name.dart';
 
 class MessageBubble extends StatelessWidget {
   final bool isMe;
@@ -81,11 +82,13 @@ class ChatScreen extends StatefulWidget {
 
   final String otherUserEmail;
   final String otherUserName;
+  final String? otherUserRole;
 
   const ChatScreen({
     super.key,
     required this.otherUserEmail,
     required this.otherUserName,
+    this.otherUserRole,
   });
 
   @override
@@ -137,6 +140,10 @@ class _ChatScreenState extends State<ChatScreen> {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
+      // Obtener el rol del usuario actual para guardarlo en la metadata del chat
+      final currentUserDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).get();
+      final currentUserRole = currentUserDoc.data()?['role']?.toString() ?? 'normal';
+
       await chatRef.set({
         'participants': [senderEmail, widget.otherUserEmail],
         'lastMessage': text,
@@ -144,6 +151,10 @@ class _ChatScreenState extends State<ChatScreen> {
         'userNames': {
           senderEmail: currentUser?.displayName ?? 'Usuario',
           widget.otherUserEmail: widget.otherUserName,
+        },
+        'userRoles': {
+          senderEmail: currentUserRole,
+          widget.otherUserEmail: widget.otherUserRole ?? 'normal',
         }
       }, SetOptions(merge: true));
 
@@ -201,14 +212,15 @@ class _ChatScreenState extends State<ChatScreen> {
               const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          widget.otherUserName,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+        title: UserBadgeName(
+          name: widget.otherUserName,
+          role: widget.otherUserRole,
+          textStyle: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: (screenWidth * 0.045).clamp(16.0, 20.0),
           ),
+          iconSize: 20.0,
         ),
         centerTitle: true,
       ),

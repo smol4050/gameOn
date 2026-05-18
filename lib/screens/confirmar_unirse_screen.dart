@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import 'main_navigation_screen.dart';
 import 'chat_screen.dart';
+import 'user_badge_name.dart';
 
 class ConfirmarUnirseScreen extends StatefulWidget {
   final String matchId;
@@ -70,6 +71,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
       final userData = userDoc.data();
       final dbName = userData?['name'];
       final dbPhoto = userData?['photoUrl'];
+      final dbRole = userData?['role'];
       final finalName = (dbName is String && dbName.isNotEmpty)
           ? dbName
           : user.displayName ?? 'Jugador';
@@ -142,6 +144,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
           'email': user.email ?? '',
           'photoUrl': finalPhotoUrl,
           'rating': 5.0,
+          'role': dbRole ?? 'normal',
           'joinedAt': FieldValue.serverTimestamp(),
         });
 
@@ -431,6 +434,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                                     otherUserName:
                                         rawPlayer['name']?.toString() ??
                                             'Jugador',
+                                    otherUserRole: rawPlayer['role']?.toString(),
                                   ),
                                 ),
                               );
@@ -521,6 +525,7 @@ class PlayerCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = player['name']?.toString() ?? 'Jugador';
     final photoUrl = player['photoUrl']?.toString() ?? '';
+    final role = player['role']?.toString();
     final ratingValue = player['rating'];
     final rating = ratingValue is num ? ratingValue.toDouble() : 5.0;
     final isMe = playerId == currentUserId;
@@ -557,11 +562,10 @@ class PlayerCardWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                UserBadgeName(
+                  name: name,
+                  role: role,
+                  textStyle: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
                     color: const Color(0xFF1F2937),

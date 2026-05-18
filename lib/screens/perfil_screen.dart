@@ -10,6 +10,7 @@ import '../services/image_service.dart';
 import '../services/auth_service.dart';
 import '../theme/colors.dart';
 import 'login_screen.dart';
+import 'user_badge_name.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -24,6 +25,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   String level = 'NA';
   String favoriteSport = 'Cargando...';
   String? photoUrl;
+  String? role;
   
   // 🔹 VARIABLES DE ESTADÍSTICAS Y REPUTACIÓN
   String rating = '5.0';
@@ -41,7 +43,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
     _loadUserData();
   }
 
-  // 🚀 CARGA TODO DESDE FIREBASE
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -77,6 +78,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         setState(() {
           name = data['name'] ?? user.displayName ?? 'Usuario';
           level = data['level'] ?? 'NA';
+          role = data['role']?.toString();
           favoriteSport = data['sport'] ?? 'Fútbol';
           photoUrl = data['photoUrl'] ?? user.photoURL;
           
@@ -188,7 +190,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: tempSport,
+                      initialValue: tempSport,
                       decoration: InputDecoration(
                         labelText: 'Deporte Favorito',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -200,7 +202,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: tempLevel,
+                      initialValue: tempLevel,
                       decoration: InputDecoration(
                         labelText: 'Nivel',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -274,13 +276,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
               const SizedBox(height: 20),
               _buildAvatar(),
               const SizedBox(height: 20),
-              Text(
-                name,
-                style: const TextStyle(
+              UserBadgeName(
+                name: name,
+                role: role,
+                textStyle: const TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,
                 ),
+                iconSize: 28.0,
               ),
               const SizedBox(height: 10),
               _buildBadgeInfo(),

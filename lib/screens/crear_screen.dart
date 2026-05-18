@@ -304,8 +304,7 @@ class _CrearScreenState extends State<CrearScreen> {
       mapboxMap.annotations.createPointAnnotationManager().then((manager) {
         pointAnnotationManager = manager;
 
-        pointAnnotationManager!.addOnPointAnnotationClickListener(
-            AnnotationClickListener(onAnnotationClick: (annotation) {
+        pointAnnotationManager!.tapEvents(onTap:(annotation) {
           final lat = annotation.geometry.coordinates.lat;
           final lng = annotation.geometry.coordinates.lng;
 
@@ -313,7 +312,8 @@ class _CrearScreenState extends State<CrearScreen> {
             (v) => v['lat'] == lat && v['lng'] == lng,
             orElse: () => <String, dynamic>{},
           );
-          if (clickedVenue.isEmpty) return false;
+          if (clickedVenue.isEmpty) return;
+
           setState(() => _selectedLocation = clickedVenue['name']);
 
           mapboxMap.flyTo(
@@ -322,8 +322,7 @@ class _CrearScreenState extends State<CrearScreen> {
                   zoom: 16.5,
                   pitch: 60.0),
               MapAnimationOptions(duration: 1500));
-          return true;
-        }));
+        });
 
         if (!_isLoadingVenues) _updateMapMarkers();
       });
@@ -911,13 +910,6 @@ class _SportCard extends StatelessWidget {
   }
 }
 
-class AnnotationClickListener extends OnPointAnnotationClickListener {
-  final bool Function(PointAnnotation) onAnnotationClick;
-  AnnotationClickListener({required this.onAnnotationClick});
-  @override
-  bool onPointAnnotationClick(PointAnnotation annotation) =>
-      onAnnotationClick(annotation);
-}
 
 // =========================================================
 // 🌍 PANTALLA DE MAPA COMPLETO (SIN CONFLICTO DE GESTOS)
@@ -990,20 +982,18 @@ class _MapaPantallaCompletaScreenState
 
       mapboxMap.annotations.createPointAnnotationManager().then((manager) {
         pointAnnotationManager = manager;
-        pointAnnotationManager!.addOnPointAnnotationClickListener(
-            AnnotationClickListener(onAnnotationClick: (annotation) {
+        pointAnnotationManager!.tapEvents(onTap:(annotation) {
           final lat = annotation.geometry.coordinates.lat;
           final lng = annotation.geometry.coordinates.lng;
           final clickedVenue = widget.venues.firstWhere(
             (v) => v['lat'] == lat && v['lng'] == lng,
             orElse: () => <String, dynamic>{},
           );
-          if (clickedVenue.isEmpty) return false;
+          if (clickedVenue.isEmpty) return;
 
           // 🔹 DEVOLVEMOS EL RESULTADO AL CERRAR LA PANTALLA
           Navigator.pop(context, clickedVenue);
-          return true;
-        }));
+        });
         _updateMapMarkers();
       });
     });
