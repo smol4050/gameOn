@@ -11,6 +11,7 @@ import '../services/auth_service.dart';
 import '../theme/colors.dart';
 import 'login_screen.dart';
 import 'user_badge_name.dart';
+import 'ayuda_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -630,6 +631,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   // 🔹 REPUTACIÓN
 
+  // 🔹 REPUTACIÓN
+
   Widget _buildReputationSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -665,36 +668,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              // 🚀 Mapea las etiquetas guardadas en DB
-              children: reputationTags.map((tag) => _reputationTag(tag)).toList(),
-            )
+            // 🔥 SE ELIMINÓ EL WRAP CON LOS TAGS DE AQUÍ
           ],
         ),
       ),
     );
   }
 
-  Widget _reputationTag(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  // 🔹 SETTINGS (Ayuda y Cerrar sesión)
+// 🔹 SETTINGS (Ayuda y Cerrar sesión)
 
   Widget _settingsSection(BuildContext context) {
     return Padding(
@@ -717,11 +698,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Soporte en construcción 🛠️'),
-                    backgroundColor: AppColors.primary,
-                  ),
+                // 🚀 NAVEGAMOS A LA NUEVA PANTALLA
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AyudaScreen()),
                 );
               },
               title: const Text(

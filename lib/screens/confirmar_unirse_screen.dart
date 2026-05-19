@@ -10,11 +10,13 @@ import 'user_badge_name.dart';
 class ConfirmarUnirseScreen extends StatefulWidget {
   final String matchId;
   final Map<String, dynamic> matchData;
+  final bool isEvent;
 
   const ConfirmarUnirseScreen({
     super.key,
     required this.matchId,
     required this.matchData,
+    this.isEvent = false,
   });
 
   @override
@@ -24,11 +26,42 @@ class ConfirmarUnirseScreen extends StatefulWidget {
 class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
   bool _isJoined = false;
   bool _isLoading = false;
+  String _userRole = 'normal';
+  
+  // Nuevas variables para almacenar los datos en vivo
+  String _collectionName = 'matches';
+  Map<String, dynamic> _liveData = {};
+  bool _isFetchingData = true;
 
   @override
   void initState() {
     super.initState();
-    _checkIfJoined();
+    _liveData = Map.from(widget.matchData);
+    _loadLiveMatchData();
+  }
+
+  // Descubre si es un partido o un evento y descarga la info completa
+  Future<void> _loadLiveMatchData() async {
+    try {
+      var doc = await FirebaseFirestore.instance.collection('matches').doc(widget.matchId).get();
+      if (doc.exists) {
+        _collectionName = 'matches';
+        if (mounted) setState(() => _liveData = doc.data() ?? {});
+      } else {
+        doc = await FirebaseFirestore.instance.collection('events').doc(widget.matchId).get();
+        if (doc.exists) {
+          _collectionName = 'events';
+          if (mounted) setState(() => _liveData = doc.data() ?? {});
+        }
+      }
+    } catch (e) {
+      debugPrint('Error cargando datos en vivo: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingData = false);
+        _checkIfJoined();
+      }
+    }
   }
 
   Future<void> _checkIfJoined() async {
@@ -36,11 +69,16 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     if (user == null) return;
 
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('agenda')
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (userDoc.exists && mounted) {
+        setState(() => _userRole = userDoc.data()?['role'] ?? 'normal');
+      }
+
+       final doc = await FirebaseFirestore.instance
+          .collection(_collectionName)
           .doc(widget.matchId)
+          .collection('players')
+          .doc(user.uid)
           .get();
 
       if (mounted) setState(() => _isJoined = doc.exists);
@@ -84,9 +122,11 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
           .doc(user.uid)
           .collection('agenda')
           .doc(widget.matchId);
-      final matchRef =
-          FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
-      final playerRef = matchRef.collection('players').doc(user.uid);
+      
+      
+       final matchRef =
+        FirebaseFirestore.instance.collection(_collectionName).doc(widget.matchId);
+       final playerRef = matchRef.collection('players').doc(user.uid);
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final matchSnap = await transaction.get(matchRef);
@@ -135,8 +175,9 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
           'matchId': widget.matchId,
           'title': widget.matchData['title'],
           'date': widget.matchData['date'],
-          'sport': widget.matchData['sport'] ?? widget.matchData['category'],
+          'sport': _liveData['sport'] ?? _liveData['category'] ?? widget.matchData['sport'] ?? widget.matchData['category'],
           'location': widget.matchData['location'],
+          'type': _collectionName,
         });
 
         transaction.set(playerRef, {
@@ -184,8 +225,70 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     }
   }
 
-  Widget _buildInfoRow({
-    required IconData icon,
+  Future<void> _deleteActivity() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Eliminar actividad?'),
+        content: const Text('Esta acción es irreversible. Se cancelará la actividad y se notificará a todos los jugadores inscritos.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final matchRef = FirebaseFirestore.instance.collection(_collectionName).doc(widget.matchId);
+      
+      // 1. Obtener todos los jugadores inscritos
+      final playersSnap = await matchRef.collection('players').get();
+      final batch = FirebaseFirestore.instance.batch();
+
+      // 2. Iterar sobre ellos para borrarlos de su agenda y mandarles notificación
+      for (var playerDoc in playersSnap.docs) {
+        final playerId = playerDoc.id;
+        
+        final agendaRef = FirebaseFirestore.instance.collection('users').doc(playerId).collection('agenda').doc(widget.matchId);
+        batch.delete(agendaRef);
+
+        final notificationRef = FirebaseFirestore.instance.collection('users').doc(playerId).collection('notifications').doc();
+        batch.set(notificationRef, {
+          'title': 'Actividad Cancelada',
+          'message': 'El organizador ha cancelado: ${_liveData['title'] ?? widget.matchData['title'] ?? 'la actividad'}',
+          'date': FieldValue.serverTimestamp(),
+          'type': 'cancel',
+          'read': false,
+        });
+      }
+
+      // 3. Borrar el documento principal de la actividad
+      batch.delete(matchRef);
+      await batch.commit();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Actividad eliminada correctamente')));
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen(initialIndex: 0)),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error eliminando actividad: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+   Widget _buildInfoRow({
+     required IconData icon,
     required String title,
     required String value,
     required double screenWidth,
@@ -241,7 +344,13 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     final screenWidth = size.width;
     final screenHeight = size.height;
     final pagePadding = screenWidth * 0.06;
-    final data = widget.matchData;
+    final data = _liveData;
+    if (_isFetchingData) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5F7FA),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF155DFC))),
+      );
+    }
     final title = data['title']?.toString() ?? 'Partido sin titulo';
     final location =
         data['location']?.toString() ?? 'Ubicacion no especificada';
@@ -262,15 +371,26 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     final joined = (data['joinedSlots'] as num?)?.toInt() ?? 0;
     final total = ((data['totalSlots'] as num?)?.toInt() ?? 10).clamp(1, 9999);
     final progress = (joined / total).clamp(0.0, 1.0);
-    final buttonHeight = (screenHeight * 0.064).clamp(52.0, 62.0);
+     final buttonHeight = (screenHeight * 0.064).clamp(52.0, 62.0);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
+    final isCreator = currentUserId == data['creatorId'];
+    final isAdmin = _userRole == 'admin';
+    final canDelete = isCreator || isAdmin;
+
+     return Scaffold(
+     backgroundColor: const Color(0xFFF5F7FA),
+     appBar: AppBar(
         backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-      ),
+        actions: [
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: _isLoading ? null : _deleteActivity,
+            ),
+        ],
+       ),
       body: SafeArea(
         child: Column(
           children: [
@@ -380,8 +500,8 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                   ),
                   SizedBox(height: screenHeight * 0.018),
                   StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('matches')
+                      stream: FirebaseFirestore.instance
+                        .collection(_collectionName)
                         .doc(widget.matchId)
                         .collection('players')
                         .orderBy('joinedAt')
