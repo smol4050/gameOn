@@ -750,7 +750,7 @@ class _CrearScreenState extends State<CrearScreen> {
               : Text(
                   _isFormValid
                       ? 'CREAR PARTIDO'
-                      : 'COMPLETE TODOS LOS CAMPOS PARA CREAR',
+                      : 'COMPLETE TODOS LOS CAMPOS',
                   style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w800,
