@@ -602,7 +602,14 @@ class _MapaPantallaCompletaEventoScreenState extends State<MapaPantallaCompletaE
           if (clickedVenue.isEmpty) return;
 
           // Hacemos vuelo y abrimos tarjeta
-          mapboxMap.flyTo(CameraOptions(center: Point(coordinates: Position(lng as num, lat as num)), zoom: 16.5, pitch: 60.0), MapAnimationOptions(duration: 1200));
+         mapboxMap.flyTo(
+            CameraOptions(
+              center: Point(coordinates: Position(lng, lat)), 
+              zoom: 16.5, 
+              pitch: 60.0
+            ), 
+            MapAnimationOptions(duration: 1200)
+          );
           _mostrarTarjetaCancha(clickedVenue);
         });
         _updateMapMarkers();

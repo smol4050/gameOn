@@ -576,7 +576,14 @@ class _MapaPantallaCompletaScreenState extends State<MapaPantallaCompletaScreen>
           final clickedVenue = widget.venues.firstWhere((v) => v['lat'] == lat && v['lng'] == lng, orElse: () => <String, dynamic>{});
           if (clickedVenue.isEmpty) return;
 
-          mapboxMap.flyTo(CameraOptions(center: Point(coordinates: Position(lng as num, lat as num)), zoom: 16.5, pitch: 60.0), MapAnimationOptions(duration: 1200));
+          mapboxMap.flyTo(
+            CameraOptions(
+              center: Point(coordinates: Position(lng, lat)), 
+              zoom: 16.5, 
+              pitch: 60.0
+            ), 
+            MapAnimationOptions(duration: 1200)
+          );
           _mostrarTarjetaCancha(clickedVenue);
         });
         _updateMapMarkers();
