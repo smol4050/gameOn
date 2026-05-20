@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import 'user_badge_name.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MessageBubble extends StatelessWidget {
   final bool isMe;
@@ -26,11 +27,11 @@ class MessageBubble extends StatelessWidget {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: EdgeInsets.only(bottom: screenHeight * 0.016),
+        margin: EdgeInsets.only(bottom: (screenHeight * 0.016).r),
         constraints: BoxConstraints(maxWidth: screenWidth * 0.72),
         padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.04,
-          vertical: screenHeight * 0.014,
+          horizontal: (screenWidth * 0.04).r,
+          vertical: (screenHeight * 0.014).r,
         ),
         decoration: BoxDecoration(
           gradient: isMe
@@ -54,19 +55,19 @@ class MessageBubble extends StatelessWidget {
               message,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
+                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0).sp,
                 height: 1.4,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            SizedBox(height: screenHeight * 0.007),
+            SizedBox(height: (screenHeight * 0.007).h),
             Align(
               alignment: Alignment.bottomRight,
               child: Text(
                 time,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: (screenWidth * 0.028).clamp(10.0, 12.0),
+                  fontSize: (screenWidth * 0.028).clamp(10.0, 12.0).sp,
                 ),
               ),
             ),
@@ -141,8 +142,12 @@ class _ChatScreenState extends State<ChatScreen> {
       });
 
       // Obtener el rol del usuario actual para guardarlo en la metadata del chat
-      final currentUserDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).get();
-      final currentUserRole = currentUserDoc.data()?['role']?.toString() ?? 'normal';
+      final currentUserDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      final currentUserRole =
+          currentUserDoc.data()?['role']?.toString() ?? 'normal';
 
       await chatRef.set({
         'participants': [senderEmail, widget.otherUserEmail],
@@ -218,7 +223,7 @@ class _ChatScreenState extends State<ChatScreen> {
           textStyle: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: (screenWidth * 0.045).clamp(16.0, 20.0),
+            fontSize: (screenWidth * 0.045).clamp(16.0, 20.0).sp,
           ),
           iconSize: 20.0,
         ),
@@ -262,8 +267,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 return ListView.builder(
                   reverse: true,
                   padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: screenHeight * 0.024),
+                      horizontal: (screenWidth * 0.04).r,
+                      vertical: (screenHeight * 0.024).r),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final rawData = messages[index].data();
@@ -293,7 +298,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           Container(
             padding: EdgeInsets.symmetric(
-                horizontal: inputPadding, vertical: screenHeight * 0.014),
+                horizontal: inputPadding.r, vertical: (screenHeight * 0.014).r),
             decoration: BoxDecoration(
               color: const Color(0xFF232734),
               border: Border(
@@ -307,7 +312,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       constraints: BoxConstraints(minHeight: inputHeight),
                       decoration: BoxDecoration(
                         color: const Color(0xFF181A20),
-                        borderRadius: BorderRadius.circular(screenWidth * 0.06),
+                        borderRadius:
+                            BorderRadius.circular((screenWidth * 0.06).r),
                       ),
                       child: TextField(
                         controller: _messageController,
@@ -319,18 +325,18 @@ class _ChatScreenState extends State<ChatScreen> {
                           hintStyle: const TextStyle(color: Colors.grey),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.05,
-                            vertical: inputHeight * 0.26,
+                            horizontal: (screenWidth * 0.05).r,
+                            vertical: (inputHeight * 0.26).r,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.03),
+                  SizedBox(width: (screenWidth * 0.03).w),
                   GestureDetector(
                     onTap: _isSending ? null : _sendMessage,
                     child: Container(
-                      padding: EdgeInsets.all(screenWidth * 0.035),
+                      padding: EdgeInsets.all((screenWidth * 0.035).r),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: _isSending ? Colors.grey : AppColors.primary,
@@ -338,7 +344,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: Icon(
                         Icons.send_rounded,
                         color: Colors.white,
-                        size: screenWidth * 0.05,
+                        size: (screenWidth * 0.05).r,
                       ),
                     ),
                   ),

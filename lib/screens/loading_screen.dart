@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/colors.dart';
 import 'main_navigation_screen.dart';
 import 'login_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -57,17 +58,17 @@ class _LoadingScreenState extends State<LoadingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.sports_soccer, size: iconSize, color: Colors.white),
-            SizedBox(height: screenHeight * 0.028),
+            Icon(Icons.sports_soccer, size: iconSize.r, color: Colors.white),
+            SizedBox(height: (screenHeight * 0.028).h),
             Text(
               'Game On',
               style: TextStyle(
-                fontSize: (screenWidth * 0.105).clamp(36.0, 46.0),
+                fontSize: (screenWidth * 0.105).clamp(36.0, 46.0).sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
-            SizedBox(height: screenHeight * 0.055),
+            SizedBox(height: (screenHeight * 0.055).h),
             const CircularProgressIndicator(color: Colors.white),
           ],
         ),

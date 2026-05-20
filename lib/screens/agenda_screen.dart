@@ -5,9 +5,27 @@ import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import 'confirmar_unirse_screen.dart';
 import 'chat_list_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AgendaScreen extends StatelessWidget {
   const AgendaScreen({super.key});
+
+  // 🔹 NUEVO: Método para detectar el ícono correcto según el deporte
+  IconData _getSportIcon(String sport) {
+    final lowerSport = sport.toLowerCase();
+    if (lowerSport.contains('futbol') || lowerSport.contains('fútbol')) {
+      return Icons.sports_soccer;
+    } else if (lowerSport.contains('baloncesto') || lowerSport.contains('basket')) {
+      return Icons.sports_basketball;
+    } else if (lowerSport.contains('tenis') || lowerSport.contains('padel') || lowerSport.contains('pádel')) {
+      return Icons.sports_tennis;
+    } else if (lowerSport.contains('ultimate')) {
+      return Icons.animation;
+    } else if (lowerSport.contains('vóley') || lowerSport.contains('voley')) {
+      return Icons.sports_volleyball;
+    }
+    return Icons.sports;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +50,7 @@ class AgendaScreen extends StatelessWidget {
             Expanded(
               child: userId == null
                   ? const Center(
-                      child: Text('Inicia sesion para ver tu agenda.'))
+                      child: Text('Inicia sesión para ver tu agenda.'))
                   : StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('users')
@@ -80,7 +98,7 @@ class AgendaScreen extends StatelessWidget {
 
                         return ListView(
                           padding:
-                              EdgeInsets.symmetric(horizontal: pagePadding),
+                              EdgeInsets.symmetric(horizontal: pagePadding.r),
                           children: [
                             if (todayEvents.isNotEmpty) ...[
                               _sectionTitle('Hoy tienes este evento',
@@ -93,7 +111,7 @@ class AgendaScreen extends StatelessWidget {
                                   )),
                             ],
                             if (upcomingEvents.isNotEmpty) ...[
-                              _sectionTitle('Eventos proximos', screenWidth,
+                              _sectionTitle('Eventos próximos', screenWidth,
                                   screenHeight),
                               ...upcomingEvents.map((doc) => _buildAgendaCard(
                                     context,
@@ -104,8 +122,8 @@ class AgendaScreen extends StatelessWidget {
                             ],
                             if (allEvents.isEmpty)
                               Padding(
-                                padding:
-                                    EdgeInsets.only(top: screenHeight * 0.1),
+                                padding: EdgeInsets.only(
+                                    top: (screenHeight * 0.1).r),
                                 child: _emptyState(screenWidth, screenHeight),
                               ),
                           ],
@@ -121,11 +139,11 @@ class AgendaScreen extends StatelessWidget {
 
   Widget _sectionTitle(String text, double screenWidth, double screenHeight) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.012),
+      padding: EdgeInsets.symmetric(vertical: (screenHeight * 0.012).r),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: (screenWidth * 0.045).clamp(16.0, 19.0),
+          fontSize: (screenWidth * 0.045).clamp(16.0, 19.0).sp,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
@@ -142,8 +160,8 @@ class AgendaScreen extends StatelessWidget {
     final titleSize = (screenWidth * 0.085).clamp(28.0, 35.0);
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          padding, screenHeight * 0.032, padding, screenHeight * 0.028),
+      padding: EdgeInsets.fromLTRB(padding.r, (screenHeight * 0.032).r,
+          padding.r, (screenHeight * 0.028).r),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -156,25 +174,25 @@ class AgendaScreen extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: titleSize,
+                    fontSize: titleSize.sp,
                     fontWeight: FontWeight.w900,
                     color: AppColors.primary,
                   ),
                 ),
-                SizedBox(height: screenHeight * 0.007),
+                SizedBox(height: (screenHeight * 0.007).h),
                 Text(
-                  'Tus proximos partidos y eventos',
+                  'Tus próximos partidos y eventos',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                    fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(width: screenWidth * 0.03),
+          SizedBox(width: (screenWidth * 0.03).w),
           Container(
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.12),
@@ -184,7 +202,7 @@ class AgendaScreen extends StatelessWidget {
               icon: Icon(
                 Icons.chat_bubble_outline_rounded,
                 color: AppColors.primary,
-                size: screenWidth * 0.065,
+                size: (screenWidth * 0.065).r,
               ),
               onPressed: () {
                 Navigator.push(
@@ -203,40 +221,40 @@ class AgendaScreen extends StatelessWidget {
     final iconBox = screenWidth * 0.28;
     return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+        padding: EdgeInsets.symmetric(horizontal: (screenWidth * 0.1).r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: iconBox,
-              height: iconBox,
+              width: iconBox.w,
+              height: iconBox.h,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.event_busy_rounded,
-                size: iconBox * 0.45,
+                size: (iconBox * 0.45).r,
                 color: AppColors.primary,
               ),
             ),
-            SizedBox(height: screenHeight * 0.032),
+            SizedBox(height: (screenHeight * 0.032).h),
             Text(
-              'Aun no te has unido a ningun partido',
+              'Aún no te has unido a ningún partido',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: (screenWidth * 0.055).clamp(19.0, 23.0),
+                fontSize: (screenWidth * 0.055).clamp(19.0, 23.0).sp,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
             ),
-            SizedBox(height: screenHeight * 0.012),
+            SizedBox(height: (screenHeight * 0.012).h),
             Text(
-              'Cuando te unas a un evento aparecera aqui.',
+              'Cuando te unas a un evento aparecerá aquí.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
+                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0).sp,
               ),
             ),
           ],
@@ -256,9 +274,12 @@ class AgendaScreen extends StatelessWidget {
 
     final matchId = doc.id;
     final title = dataRaw['title']?.toString() ?? 'Partido';
-    final location = dataRaw['location']?.toString() ?? 'Ubicacion';
+    final location = dataRaw['location']?.toString() ?? 'Ubicación';
     final sport = dataRaw['sport']?.toString() ?? 'Deporte';
     final iconBox = (screenWidth * 0.155).clamp(54.0, 66.0);
+
+    // 🔹 SOLUCIÓN: Extraer dinámicamente el ícono del deporte
+    final sportIcon = _getSportIcon(sport);
 
     String dateStr = 'Fecha pendiente';
     String timeStr = '--:--';
@@ -282,11 +303,11 @@ class AgendaScreen extends StatelessWidget {
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: screenHeight * 0.026),
-        padding: EdgeInsets.all(screenWidth * 0.055),
+        margin: EdgeInsets.only(bottom: (screenHeight * 0.026).r),
+        padding: EdgeInsets.all((screenWidth * 0.055).r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.07),
+          borderRadius: BorderRadius.circular((screenWidth * 0.07).r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -305,15 +326,15 @@ class AgendaScreen extends StatelessWidget {
                   height: iconBox,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                    borderRadius: BorderRadius.circular((screenWidth * 0.05).r),
                   ),
                   child: Icon(
-                    Icons.sports_soccer,
+                    sportIcon, // 🔹 SOLUCIÓN: Ícono dinámico asignado aquí
                     color: AppColors.primary,
-                    size: iconBox * 0.48,
+                    size: (iconBox * 0.48).r,
                   ),
                 ),
-                SizedBox(width: screenWidth * 0.045),
+                SizedBox(width: (screenWidth * 0.045).w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,16 +344,16 @@ class AgendaScreen extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: (screenWidth * 0.05).clamp(17.0, 21.0),
+                          fontSize: (screenWidth * 0.05).clamp(17.0, 21.0).sp,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      SizedBox(height: screenHeight * 0.007),
+                      SizedBox(height: (screenHeight * 0.007).h),
                       Text(
                         sport,
                         style: TextStyle(
-                          fontSize: (screenWidth * 0.036).clamp(12.0, 15.0),
+                          fontSize: (screenWidth * 0.036).clamp(12.0, 15.0).sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -342,12 +363,13 @@ class AgendaScreen extends StatelessWidget {
                 Flexible(
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.032,
-                      vertical: screenHeight * 0.012,
+                      horizontal: (screenWidth * 0.032).r,
+                      vertical: (screenHeight * 0.012).r,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                      borderRadius:
+                          BorderRadius.circular((screenWidth * 0.04).r),
                     ),
                     child: Text(
                       'Confirmado',
@@ -356,19 +378,19 @@ class AgendaScreen extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
-                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                       ),
                     ),
                   ),
                 )
               ],
             ),
-            SizedBox(height: screenHeight * 0.028),
+            SizedBox(height: (screenHeight * 0.028).h),
             Row(
               children: [
                 Icon(Icons.calendar_today_rounded,
-                    size: screenWidth * 0.04, color: AppColors.primary),
-                SizedBox(width: screenWidth * 0.02),
+                    size: (screenWidth * 0.04).r, color: AppColors.primary),
+                SizedBox(width: (screenWidth * 0.02).w),
                 Expanded(
                   child: Text(
                     '$dateStr • $timeStr',
@@ -378,12 +400,12 @@ class AgendaScreen extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: screenHeight * 0.018),
+            SizedBox(height: (screenHeight * 0.018).h),
             Row(
               children: [
                 Icon(Icons.location_on_outlined,
-                    size: screenWidth * 0.045, color: AppColors.primary),
-                SizedBox(width: screenWidth * 0.02),
+                    size: (screenWidth * 0.045).r, color: AppColors.primary),
+                SizedBox(width: (screenWidth * 0.02).w),
                 Expanded(
                   child: Text(
                     location,

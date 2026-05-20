@@ -5,6 +5,7 @@ import 'eventos_screen.dart';
 import 'agenda_screen.dart';
 import 'perfil_screen.dart';
 import 'crear_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
@@ -23,11 +24,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _selectedIndex = widget.initialIndex.clamp(0, 3).toInt();
   }
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    EventsScreen(),
-    AgendaScreen(),
-    PerfilScreen(),
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const EventsScreen(),
+    const AgendaScreen(),
+    const PerfilScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -47,8 +48,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return Scaffold(
       body: _screens[_selectedIndex],
       floatingActionButton: SizedBox(
-        width: fabSize,
-        height: fabSize,
+        width: fabSize.w,
+        height: fabSize.h,
         child: FloatingActionButton(
           onPressed: () {
             Navigator.push(
@@ -58,7 +59,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           backgroundColor: AppColors.primary,
           shape: const CircleBorder(),
-          child: Icon(Icons.add, color: Colors.white, size: fabSize * 0.48),
+          child: Icon(Icons.add, color: Colors.white, size: (fabSize * 0.48).r),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -67,7 +68,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         notchMargin: screenWidth * 0.02,
         clipBehavior: Clip.antiAlias,
         child: SizedBox(
-          height: navHeight,
+          height: navHeight.h,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -82,7 +83,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ],
                 ),
               ),
-              SizedBox(width: fabSize * 1.05),
+              SizedBox(width: (fabSize * 1.05).w),
               Flexible(
                 child: Row(
                   children: [
@@ -113,7 +114,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         children: [
           Icon(
             icon,
-            size: (screenWidth * 0.055).clamp(20.0, 26.0),
+            size: (screenWidth * 0.055).clamp(20.0, 26.0).r,
             color: isActive ? AppColors.primary : Colors.grey,
           ),
           Text(
@@ -121,7 +122,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: (screenWidth * 0.03).clamp(10.0, 12.5),
+              fontSize: (screenWidth * 0.03).clamp(10.0, 12.5).sp,
               color: isActive ? AppColors.primary : Colors.grey,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),

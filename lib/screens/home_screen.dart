@@ -6,6 +6,7 @@ import 'confirmar_unirse_screen.dart';
 import '../theme/colors.dart';
 import 'package:intl/intl.dart';
 import 'notifications_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,9 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
     {'title': 'Todos', 'emoji': '🌍'},
     {'title': 'Fútbol', 'emoji': '⚽'},
     {'title': 'Baloncesto', 'emoji': '🏀'},
-    {'title': 'Pádel', 'emoji': '🎾'},
     {'title': 'Tenis', 'emoji': '🎾'},
+    {'title': 'Pádel', 'emoji': '🏓'},
     {'title': 'Ultimate', 'emoji': '🥏'},
+    {'title': 'Vóley', 'emoji': '🏐'},
   ];
 
   @override
@@ -136,8 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final iconBox = (screenWidth * 0.135).clamp(48.0, 58.0);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-          padding, screenHeight * 0.028, padding, screenHeight * 0.012),
+      padding: EdgeInsets.fromLTRB(padding.r, (screenHeight * 0.028).r,
+          padding.r, (screenHeight * 0.012).r),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -150,36 +152,36 @@ class _HomeScreenState extends State<HomeScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: titleSize,
+                    fontSize: titleSize.sp,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
                 ),
-                SizedBox(height: screenHeight * 0.005),
+                SizedBox(height: (screenHeight * 0.005).h),
                 Text(
                   'Encuentra tu próximo partido',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: subtitleSize,
+                    fontSize: subtitleSize.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(width: screenWidth * 0.03),
+          SizedBox(width: (screenWidth * 0.03).w),
           GestureDetector(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
             ),
             child: Container(
-              width: iconBox,
-              height: iconBox,
+              width: iconBox.w,
+              height: iconBox.h,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(screenWidth * 0.045),
+                borderRadius: BorderRadius.circular((screenWidth * 0.045).r),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -191,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Icon(
                 Icons.notifications_none_rounded,
                 color: AppColors.primary,
-                size: iconBox * 0.48,
+                size: (iconBox * 0.48).r,
               ),
             ),
           ),
@@ -206,9 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
     required double height,
   }) {
     return SizedBox(
-      height: height,
+      height: height.h,
       child: ListView.builder(
-        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
+        padding: EdgeInsets.symmetric(horizontal: (screenWidth * 0.035).r),
         scrollDirection: Axis.horizontal,
         itemCount: categorias.length,
         itemBuilder: (context, i) {
@@ -225,10 +227,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               width: cardWidth,
-              margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.018),
+              margin: EdgeInsets.symmetric(horizontal: (screenWidth * 0.018).r),
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : Colors.white,
-                borderRadius: BorderRadius.circular(screenWidth * 0.06),
+                borderRadius: BorderRadius.circular((screenWidth * 0.06).r),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
@@ -243,19 +245,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     cat['emoji'],
                     style: TextStyle(
-                        fontSize: (screenWidth * 0.07).clamp(22.0, 30.0)),
+                        fontSize: (screenWidth * 0.07).clamp(22.0, 30.0).sp),
                   ),
-                  SizedBox(height: screenHeight * 0.009),
+                  SizedBox(height: (screenHeight * 0.009).h),
                   Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: (screenWidth * 0.01).r),
                     child: Text(
                       cat['title'],
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                         color: selected ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
@@ -280,24 +282,24 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Padding(
           padding: EdgeInsets.only(
-              left: padding,
-              right: padding,
-              top: screenHeight * 0.02,
-              bottom: screenHeight * 0.01),
+              left: padding.r,
+              right: padding.r,
+              top: (screenHeight * 0.02).r,
+              bottom: (screenHeight * 0.01).r),
           child: Text(
             'Vistos recientemente',
             style: TextStyle(
-              fontSize: (screenWidth * 0.042).clamp(14.0, 18.0),
+              fontSize: (screenWidth * 0.042).clamp(14.0, 18.0).sp,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
         ),
         SizedBox(
-          height: (screenHeight * 0.08).clamp(60.0, 75.0),
+          height: (screenHeight * 0.08).clamp(60.0, 75.0).h,
           child: ListView.builder(
             padding: EdgeInsets.symmetric(
-                horizontal: padding - (screenWidth * 0.018)),
+                horizontal: padding - (screenWidth * 0.018).r),
             scrollDirection: Axis.horizontal,
             itemCount: _partidosRecientes.length,
             itemBuilder: (context, index) {
@@ -331,15 +333,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 },
                 child: Container(
-                  width: (screenWidth * 0.45).clamp(150.0, 200.0),
+                  width: (screenWidth * 0.45).clamp(150.0, 200.0).w,
                   margin: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.018,
-                      vertical: screenHeight * 0.005),
+                      horizontal: (screenWidth * 0.018).r,
+                      vertical: (screenHeight * 0.005).r),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      EdgeInsets.symmetric(horizontal: 12.r, vertical: 8.r),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.r),
                     border:
                         Border.all(color: Colors.grey.withValues(alpha: 0.1)),
                     boxShadow: [
@@ -353,15 +355,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: EdgeInsets.all(6.r),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child:
-                            Icon(sportIcon, color: AppColors.primary, size: 18),
+                        child: Icon(sportIcon,
+                            color: AppColors.primary, size: 18.r),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,19 +373,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               partido['title'],
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontSize: 13.sp,
                               ),
                             ),
                             Text(
                               partido['sport'],
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 // <--- ¡Solucionado!
                                 color: AppColors.textSecondary,
-                                fontSize: 11,
+                                fontSize: 11.sp,
                               ),
                             ),
                           ],
@@ -442,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         return ListView.builder(
-          padding: EdgeInsets.all(padding),
+          padding: EdgeInsets.all(padding.r),
           itemCount: partidosVigentes.length,
           itemBuilder: (context, index) {
             final doc = partidosVigentes[index];
@@ -464,15 +466,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final lowerSport = sport.toLowerCase();
     if (lowerSport.contains('futbol') || lowerSport.contains('fútbol')) {
       return Icons.sports_soccer;
-    } else if (lowerSport.contains('baloncesto') ||
-        lowerSport.contains('basket')) {
+    } else if (lowerSport.contains('baloncesto') || lowerSport.contains('basket')) {
       return Icons.sports_basketball;
-    } else if (lowerSport.contains('tenis') ||
-        lowerSport.contains('padel') ||
-        lowerSport.contains('pádel')) {
+    } else if (lowerSport.contains('tenis') || lowerSport.contains('padel') || lowerSport.contains('pádel')) {
       return Icons.sports_tennis;
     } else if (lowerSport.contains('ultimate')) {
       return Icons.animation;
+    } else if (lowerSport.contains('vóley') || lowerSport.contains('voley')) {
+      return Icons.sports_volleyball;
     }
     return Icons.sports;
   }
@@ -516,11 +517,11 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: screenHeight * 0.026),
-        padding: EdgeInsets.all(cardPadding),
+        margin: EdgeInsets.only(bottom: (screenHeight * 0.026).r),
+        padding: EdgeInsets.all(cardPadding.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.07),
+          borderRadius: BorderRadius.circular((screenWidth * 0.07).r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -539,15 +540,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: iconSize,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(screenWidth * 0.045),
+                    borderRadius:
+                        BorderRadius.circular((screenWidth * 0.045).r),
                   ),
                   child: Icon(
                     sportIcon,
                     color: AppColors.primary,
-                    size: iconSize * 0.52,
+                    size: (iconSize * 0.52).r,
                   ),
                 ),
-                SizedBox(width: screenWidth * 0.04),
+                SizedBox(width: (screenWidth * 0.04).w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,17 +559,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: (screenWidth * 0.05).clamp(17.0, 21.0),
+                          fontSize: (screenWidth * 0.05).clamp(17.0, 21.0).sp,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      SizedBox(height: screenHeight * 0.005),
+                      SizedBox(height: (screenHeight * 0.005).h),
                       Text(
                         sport,
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                          fontSize: (screenWidth * 0.035).clamp(12.0, 15.0).sp,
                         ),
                       ),
                     ],
@@ -575,12 +577,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            SizedBox(height: screenHeight * 0.024),
+            SizedBox(height: (screenHeight * 0.024).h),
             Row(
               children: [
                 Icon(Icons.calendar_today_rounded,
-                    size: screenWidth * 0.04, color: AppColors.primary),
-                SizedBox(width: screenWidth * 0.02),
+                    size: (screenWidth * 0.04).r, color: AppColors.primary),
+                SizedBox(width: (screenWidth * 0.02).w),
                 Expanded(
                   child: Text(
                     dateStr,
@@ -588,31 +590,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0).sp,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: screenHeight * 0.012),
+            SizedBox(height: (screenHeight * 0.012).h),
             Row(
               children: [
                 Icon(Icons.location_on_outlined,
-                    size: screenWidth * 0.045, color: AppColors.primary),
-                SizedBox(width: screenWidth * 0.02),
+                    size: (screenWidth * 0.045).r, color: AppColors.primary),
+                SizedBox(width: (screenWidth * 0.02).w),
                 Expanded(
                   child: Text(
                     location,
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0).sp,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: screenHeight * 0.024),
+            SizedBox(height: (screenHeight * 0.024).h),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -624,7 +626,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         '$joined / $total jugadores',
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                          fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textSecondary,
                         ),
@@ -633,16 +635,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       '${(progress * 100).toInt()}%',
                       style: TextStyle(
-                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: screenHeight * 0.01),
+                SizedBox(height: (screenHeight * 0.01).h),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  borderRadius: BorderRadius.circular((screenWidth * 0.025).r),
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: screenHeight * 0.01,

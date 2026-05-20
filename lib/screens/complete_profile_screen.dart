@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/colors.dart';
 import 'main_navigation_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   final String uid;
@@ -76,26 +77,26 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(padding),
+          padding: EdgeInsets.all(padding.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Casi listo',
                 style: TextStyle(
-                  fontSize: (screenWidth * 0.07).clamp(24.0, 30.0),
+                  fontSize: (screenWidth * 0.07).clamp(24.0, 30.0).sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.01),
+              SizedBox(height: (screenHeight * 0.01).h),
               Text(
                 'Hola ${widget.name}, dinos que juegas para personalizar tu experiencia.',
                 style: TextStyle(
                   color: Colors.grey,
-                  fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                  fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.038),
+              SizedBox(height: (screenHeight * 0.038).h),
               _buildDropdown(
                 hint: 'Tu Deporte',
                 value: _selectedSport,
@@ -105,7 +106,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 radius: radius,
                 horizontalPadding: padding,
               ),
-              SizedBox(height: screenHeight * 0.024),
+              SizedBox(height: (screenHeight * 0.024).h),
               _buildDropdown(
                 hint: 'Tu Nivel',
                 value: _selectedLevel,
@@ -118,13 +119,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               const Spacer(),
               SizedBox(
                 width: double.infinity,
-                height: inputHeight,
+                height: inputHeight.h,
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(radius)),
+                        borderRadius: BorderRadius.circular(radius.r)),
                   ),
                   child: _isSaving
                       ? const CircularProgressIndicator(color: Colors.white)
@@ -132,7 +133,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           'Finalizar Registro',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                            fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -155,11 +156,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     required double horizontalPadding,
   }) {
     return Container(
-      height: height,
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.65),
+      height: height.h,
+      padding: EdgeInsets.symmetric(horizontal: (horizontalPadding * 0.65).r),
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(radius.r),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(

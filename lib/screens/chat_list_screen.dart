@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import 'chat_screen.dart';
 import 'user_badge_name.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -32,7 +33,7 @@ class ChatListScreen extends StatelessWidget {
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w800,
-            fontSize: (screenWidth * 0.055).clamp(18.0, 23.0),
+            fontSize: (screenWidth * 0.055).clamp(18.0, 23.0).sp,
           ),
         ),
         centerTitle: true,
@@ -72,7 +73,7 @@ class ChatListScreen extends StatelessWidget {
                 });
 
                 return ListView.builder(
-                  padding: EdgeInsets.all(screenWidth * 0.05),
+                  padding: EdgeInsets.all((screenWidth * 0.05).r),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final rawData = docs[index].data();
@@ -143,17 +144,19 @@ class ChatListScreen extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                ChatScreen(otherUserEmail: email, otherUserName: name, otherUserRole: role),
+            builder: (_) => ChatScreen(
+                otherUserEmail: email,
+                otherUserName: name,
+                otherUserRole: role),
           ),
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: screenHeight * 0.018),
-        padding: EdgeInsets.all(screenWidth * 0.04),
+        margin: EdgeInsets.only(bottom: (screenHeight * 0.018).r),
+        padding: EdgeInsets.all((screenWidth * 0.04).r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.06),
+          borderRadius: BorderRadius.circular((screenWidth * 0.06).r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -175,14 +178,14 @@ class ChatListScreen extends StatelessWidget {
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
                   style: TextStyle(
-                    fontSize: (screenWidth * 0.055).clamp(18.0, 23.0),
+                    fontSize: (screenWidth * 0.055).clamp(18.0, 23.0).sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
                 ),
               ),
             ),
-            SizedBox(width: screenWidth * 0.04),
+            SizedBox(width: (screenWidth * 0.04).w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,28 +198,29 @@ class ChatListScreen extends StatelessWidget {
                           name: name,
                           role: role,
                           textStyle: TextStyle(
-                            fontSize: (screenWidth * 0.043).clamp(15.0, 18.0),
+                            fontSize:
+                                (screenWidth * 0.043).clamp(15.0, 18.0).sp,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                      SizedBox(width: screenWidth * 0.02),
+                      SizedBox(width: (screenWidth * 0.02).w),
                       Text(
                         time,
                         style: TextStyle(
-                          fontSize: (screenWidth * 0.03).clamp(10.0, 13.0),
+                          fontSize: (screenWidth * 0.03).clamp(10.0, 13.0).sp,
                           color: Colors.grey,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: screenHeight * 0.007),
+                  SizedBox(height: (screenHeight * 0.007).h),
                   Text(
                     lastMessage,
                     style: TextStyle(
-                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                      fontSize: (screenWidth * 0.035).clamp(12.0, 15.0).sp,
                       color: AppColors.textSecondary,
                     ),
                     maxLines: 1,
@@ -236,36 +240,36 @@ class ChatListScreen extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+        padding: EdgeInsets.symmetric(horizontal: (screenWidth * 0.1).r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: iconBox,
-              height: iconBox,
+              width: iconBox.w,
+              height: iconBox.h,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.chat_bubble_outline_rounded,
-                  size: iconBox * 0.4, color: AppColors.primary),
+                  size: (iconBox * 0.4).r, color: AppColors.primary),
             ),
-            SizedBox(height: screenHeight * 0.028),
+            SizedBox(height: (screenHeight * 0.028).h),
             Text(
               'No tienes mensajes',
               style: TextStyle(
-                fontSize: (screenWidth * 0.05).clamp(18.0, 22.0),
+                fontSize: (screenWidth * 0.05).clamp(18.0, 22.0).sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            SizedBox(height: screenHeight * 0.012),
+            SizedBox(height: (screenHeight * 0.012).h),
             Text(
               'Tus conversaciones con otros jugadores apareceran aqui.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
+                fontSize: (screenWidth * 0.038).clamp(13.0, 16.0).sp,
               ),
             ),
           ],

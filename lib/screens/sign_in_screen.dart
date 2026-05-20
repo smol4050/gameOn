@@ -10,6 +10,7 @@ import 'main_navigation_screen.dart';
 import '../services/auth_service.dart';
 import '../services/image_service.dart';
 import '../theme/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -34,21 +35,25 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   // 🔹 Función para seleccionar, comprimir y subir imagen ANTES del registro
   Future<void> _processAndUploadImage() async {
     final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
 
     setState(() => _isUploadingImage = true);
 
     try {
       final tempDir = await getTemporaryDirectory();
-      final targetPath = "${tempDir.path}/reg_${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final targetPath =
+          "${tempDir.path}/reg_${DateTime.now().millisecondsSinceEpoch}.jpg";
 
-      final XFile? compressedFile = await FlutterImageCompress.compressAndGetFile(
+      final XFile? compressedFile =
+          await FlutterImageCompress.compressAndGetFile(
         pickedFile.path,
         targetPath,
         quality: 40,
@@ -57,7 +62,8 @@ class _SignInScreenState extends State<SignInScreen> {
       );
 
       if (compressedFile != null) {
-        final String? url = await ImageService.uploadImage(File(compressedFile.path));
+        final String? url =
+            await ImageService.uploadImage(File(compressedFile.path));
         if (mounted && url != null) {
           setState(() => _photoUrl = url);
         }
@@ -66,7 +72,10 @@ class _SignInScreenState extends State<SignInScreen> {
       debugPrint("Error subiendo imagen: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al subir la imagen', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Error al subir la imagen',
+                  style: TextStyle(color: Colors.white)),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -82,14 +91,17 @@ class _SignInScreenState extends State<SignInScreen> {
         selectedSport == null ||
         selectedLevel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, llena todos los campos y selecciones.')),
+        const SnackBar(
+            content: Text('Por favor, llena todos los campos y selecciones.')),
       );
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Las contraseñas no coinciden.'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('Las contraseñas no coinciden.'),
+            backgroundColor: Colors.red),
       );
       return;
     }
@@ -110,7 +122,7 @@ class _SignInScreenState extends State<SignInScreen> {
           'email': _emailController.text.trim(),
           'sport': selectedSport,
           'level': selectedLevel,
-          'photoUrl': _photoUrl, 
+          'photoUrl': _photoUrl,
           'role': 'user', // Rol por defecto
           'createdAt': FieldValue.serverTimestamp(),
         });
@@ -124,12 +136,16 @@ class _SignInScreenState extends State<SignInScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Error al registrar usuario'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text(e.message ?? 'Error al registrar usuario'),
+            backgroundColor: Colors.red),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar el perfil: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('Error al guardar el perfil: $e'),
+            backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -165,8 +181,8 @@ class _SignInScreenState extends State<SignInScreen> {
         child: Column(
           children: [
             Container(
-              height: headerHeight,
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+              height: headerHeight.h,
+              padding: EdgeInsets.symmetric(horizontal: (screenWidth * 0.04).r),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
@@ -181,7 +197,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     child: Text(
                       'Crear Cuenta',
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: titleSize.sp, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -189,31 +206,39 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(pagePadding),
+                padding: EdgeInsets.all(pagePadding.r),
                 child: Column(
                   children: [
                     // 🔹 SECCIÓN DE IMAGEN ACTUALIZADA
                     Column(
                       children: [
                         GestureDetector(
-                          onTap: _isUploadingImage ? null : _processAndUploadImage,
+                          onTap:
+                              _isUploadingImage ? null : _processAndUploadImage,
                           child: Stack(
                             children: [
                               Container(
-                                width: avatarSize,
-                                height: avatarSize,
+                                width: avatarSize.w,
+                                height: avatarSize.h,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE5E7EB),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: screenWidth * 0.008),
+                                  border: Border.all(
+                                      color: Colors.white,
+                                      width: screenWidth * 0.008),
                                 ),
                                 child: ClipOval(
                                   child: _isUploadingImage
-                                      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                                      ? const Center(
+                                          child: CircularProgressIndicator(
+                                              color: AppColors.primary))
                                       : _photoUrl != null
-                                          ? Image.network(_photoUrl!, fit: BoxFit.cover)
+                                          ? Image.network(_photoUrl!,
+                                              fit: BoxFit.cover)
                                           : Center(
-                                              child: Icon(Icons.person, size: avatarSize * 0.42, color: AppColors.primary),
+                                              child: Icon(Icons.person,
+                                                  size: (avatarSize * 0.42).r,
+                                                  color: AppColors.primary),
                                             ),
                                 ),
                               ),
@@ -221,31 +246,40 @@ class _SignInScreenState extends State<SignInScreen> {
                                 bottom: 0,
                                 right: 0,
                                 child: Container(
-                                  width: avatarSize * 0.36,
-                                  height: avatarSize * 0.36,
+                                  width: (avatarSize * 0.36).w,
+                                  height: (avatarSize * 0.36).h,
                                   decoration: BoxDecoration(
                                     color: AppColors.primary,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: screenWidth * 0.008),
+                                    border: Border.all(
+                                        color: Colors.white,
+                                        width: screenWidth * 0.008),
                                   ),
-                                  child: Icon(Icons.camera_alt, color: Colors.white, size: avatarSize * 0.16),
+                                  child: Icon(Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: (avatarSize * 0.16).r),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        SizedBox(height: screenHeight * 0.014),
+                        SizedBox(height: (screenHeight * 0.014).h),
                         Text(
                           'Añadir foto (Opcional)',
-                          style: TextStyle(fontSize: (screenWidth * 0.035).clamp(12.0, 15.0), color: const Color(0xFF6A7282)),
+                          style: TextStyle(
+                              fontSize:
+                                  (screenWidth * 0.035).clamp(12.0, 15.0).sp,
+                              color: const Color(0xFF6A7282)),
                         ),
                       ],
                     ),
-                    SizedBox(height: screenHeight * 0.035),
+                    SizedBox(height: (screenHeight * 0.035).h),
                     _label('Nombre Completo', labelSize, screenHeight),
-                    _input('Nombre', _nameController, inputHeight, radius, pagePadding),
+                    _input('Nombre', _nameController, inputHeight, radius,
+                        pagePadding),
                     _label('Correo Electrónico', labelSize, screenHeight),
-                    _input('tu@correo.com', _emailController, inputHeight, radius, pagePadding),
+                    _input('tu@correo.com', _emailController, inputHeight,
+                        radius, pagePadding),
                     _label('Contraseña', labelSize, screenHeight),
                     _passwordInput(
                       obscure1,
@@ -272,33 +306,44 @@ class _SignInScreenState extends State<SignInScreen> {
                     _dropdown(levels, selectedLevel, (v) {
                       setState(() => selectedLevel = v);
                     }, inputHeight, radius, pagePadding),
-                    SizedBox(height: screenHeight * 0.03),
+                    SizedBox(height: (screenHeight * 0.03).h),
                     SizedBox(
                       width: double.infinity,
-                      height: inputHeight,
+                      height: inputHeight.h,
                       child: ElevatedButton(
-                        onPressed: (_isLoading || _isUploadingImage) ? null : _register,
+                        onPressed: (_isLoading || _isUploadingImage)
+                            ? null
+                            : _register,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(radius.r)),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
                             : Text(
                                 'Completar Registro',
-                                style: TextStyle(fontSize: buttonTextSize, fontWeight: FontWeight.bold, color: Colors.white),
+                                style: TextStyle(
+                                    fontSize: buttonTextSize.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
                               ),
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.025),
+                    SizedBox(height: (screenHeight * 0.025).h),
                     Wrap(
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Text('¿Ya tienes cuenta? ', style: TextStyle(color: AppColors.textSecondary)),
+                        const Text('¿Ya tienes cuenta? ',
+                            style: TextStyle(color: AppColors.textSecondary)),
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: const Text('Inicia sesión', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                          child: const Text('Inicia sesión',
+                              style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ),
@@ -315,53 +360,90 @@ class _SignInScreenState extends State<SignInScreen> {
   // 🔹 WIDGETS AUXILIARES
   Widget _label(String text, double fontSize, double screenHeight) {
     return Padding(
-      padding: EdgeInsets.only(top: screenHeight * 0.018, bottom: screenHeight * 0.007),
+      padding: EdgeInsets.only(
+          top: (screenHeight * 0.018).r, bottom: (screenHeight * 0.007).r),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(text, style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600, color: const Color(0xFF364153))),
+        child: Text(text,
+            style: TextStyle(
+                fontSize: fontSize.sp,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF364153))),
       ),
     );
   }
 
-  Widget _input(String hint, TextEditingController controller, double height, double radius, double horizontalPadding) {
+  Widget _input(String hint, TextEditingController controller, double height,
+      double radius, double horizontalPadding) {
     return Container(
-      height: height,
-      decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE5E7EB)), borderRadius: BorderRadius.circular(radius), color: Colors.white),
+      height: height.h,
+      decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: BorderRadius.circular(radius.r),
+          color: Colors.white),
       child: TextField(
         controller: controller,
-        decoration: InputDecoration(hintText: hint, border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.65)),
+        decoration: InputDecoration(
+            hintText: hint,
+            border: InputBorder.none,
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: (horizontalPadding * 0.65).r)),
       ),
     );
   }
 
-  Widget _passwordInput(bool obscure, VoidCallback toggle, TextEditingController controller, double height, double radius, double horizontalPadding) {
+  Widget _passwordInput(
+      bool obscure,
+      VoidCallback toggle,
+      TextEditingController controller,
+      double height,
+      double radius,
+      double horizontalPadding) {
     return Container(
-      height: height,
-      decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE5E7EB)), borderRadius: BorderRadius.circular(radius), color: Colors.white),
+      height: height.h,
+      decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: BorderRadius.circular(radius.r),
+          color: Colors.white),
       child: TextField(
         controller: controller,
         obscureText: obscure,
         decoration: InputDecoration(
           hintText: '********',
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.65),
-          suffixIcon: IconButton(icon: Icon(obscure ? Icons.visibility_off : Icons.visibility, color: Colors.grey), onPressed: toggle),
+          contentPadding:
+              EdgeInsets.symmetric(horizontal: (horizontalPadding * 0.65).r),
+          suffixIcon: IconButton(
+              icon: Icon(obscure ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey),
+              onPressed: toggle),
         ),
       ),
     );
   }
 
-  Widget _dropdown(List<String> items, String? value, Function(String?) onChanged, double height, double radius, double horizontalPadding) {
+  Widget _dropdown(
+      List<String> items,
+      String? value,
+      Function(String?) onChanged,
+      double height,
+      double radius,
+      double horizontalPadding) {
     return Container(
-      height: height,
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.5),
-      decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE5E7EB)), borderRadius: BorderRadius.circular(radius), color: Colors.white),
+      height: height.h,
+      padding: EdgeInsets.symmetric(horizontal: (horizontalPadding * 0.5).r),
+      decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: BorderRadius.circular(radius.r),
+          color: Colors.white),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           hint: const Text('Seleccionar'),
           isExpanded: true,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),

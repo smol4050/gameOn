@@ -11,7 +11,8 @@ import 'screens/security_business_logic.dart';
 import 'theme/colors.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 class AppInitializationLogic {
   static ThemeData buildAppTheme() {
@@ -41,7 +42,8 @@ class GameOnApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Inicializar ScreenUtil con el tamaño de diseño base (ej. iPhone 13 o tu base en Figma)
     return ScreenUtilInit(
-      designSize: const Size(390, 844), // <-- Cambia esto por las medidas de tu diseño
+      designSize:
+          const Size(390, 844), // <-- Cambia esto por las medidas de tu diseño
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
@@ -99,7 +101,7 @@ class _TermsGuardOverlayState extends State<TermsGuardOverlay> {
 
   void _evaluarProgresoLectura() {
     if (!_scrollController.hasClients) return;
-    
+
     final reachedBottom = TermsAndConditionsLogic.haLlegadoAlFinal(
       pixelsActuales: _scrollController.position.pixels,
       scrollMaximo: _scrollController.position.maxScrollExtent,
@@ -127,7 +129,9 @@ class _TermsGuardOverlayState extends State<TermsGuardOverlay> {
   @override
   Widget build(BuildContext context) {
     if (_checkingCache) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator(color: AppColors.primary)));
+      return const Scaffold(
+          body: Center(
+              child: CircularProgressIndicator(color: AppColors.primary)));
     }
 
     if (_hasAcceptedTerms) {
@@ -139,69 +143,98 @@ class _TermsGuardOverlayState extends State<TermsGuardOverlay> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(24.0.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.gavel_rounded, color: AppColors.primary, size: 40),
-              const SizedBox(height: 12),
-              const Text(
+              Icon(Icons.gavel_rounded, color: AppColors.primary, size: 40.r),
+              SizedBox(height: 12.h),
+              Text(
                 'Términos y Condiciones',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                style: TextStyle(
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8.h),
+              Text(
                 'Para utilizar GameOn de forma segura, es obligatorio leer el documento completo deslizando hasta el final.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13.sp,
+                    height: 1.4),
               ),
-              const SizedBox(height: 16),
-              
+              SizedBox(height: 16.h),
+
               // 📜 CONTENEDOR LEGAL DE TEXTO CON SCROLL CONTROLADO
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF9FAFB),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.r),
                     border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
                   child: SingleChildScrollView(
                     controller: _scrollController,
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('1. DESLINDE DE RESPONSABILIDAD FINANCIERA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        SizedBox(height: 6),
+                        Text('1. DESLINDE DE RESPONSABILIDAD FINANCIERA',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                        SizedBox(height: 6.h),
                         Text(
                           'GameOn funciona única y exclusivamente como una red tecnológica para conectar deportistas y agendar canchas en Cali, Colombia. Bajo ningún supuesto la aplicación o sus desarrolladores recaudan, custodian ni administran fondos monetarios relacionados con el valor de los partidos, torneos o eventos creados por los usuarios.',
-                          style: TextStyle(fontSize: 12, height: 1.5, color: Colors.black87),
+                          style: TextStyle(
+                              fontSize: 12.sp,
+                              height: 1.5,
+                              color: Colors.black87),
                         ),
-                        SizedBox(height: 14),
-                        Text('2. RELACIÓN ENTRE PARTICIPANTES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        SizedBox(height: 6),
+                        SizedBox(height: 14.h),
+                        Text('2. RELACIÓN ENTRE PARTICIPANTES',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                        SizedBox(height: 6.h),
                         Text(
                           'Toda transacción económica vinculada a un evento con costo se ejecutará externamente de mutuo acuerdo entre el usuario inscrito y el organizador designado. GameOn carece de facultades de mediación bancaria y no responderá ante fraudes, inasistencias o incumplimientos financieros de terceros.',
-                          style: TextStyle(fontSize: 12, height: 1.5, color: Colors.black87),
+                          style: TextStyle(
+                              fontSize: 12.sp,
+                              height: 1.5,
+                              color: Colors.black87),
                         ),
-                        SizedBox(height: 14),
-                        Text('3. CONDUCTA DEPORTIVA Y REPUTACIÓN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        SizedBox(height: 6),
+                        SizedBox(height: 14.h),
+                        Text('3. CONDUCTA DEPORTIVA Y REPUTACIÓN',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                        SizedBox(height: 6.h),
                         Text(
                           'Los usuarios aceptan someterse al sistema de reputación comunitaria. Reportes acumulados que representen el 70% o más de los asistentes de una actividad por malas conductas, faltas de respeto o agresiones derivarán automáticamente en penalizaciones y reducciones directas del score en su perfil público.',
-                          style: TextStyle(fontSize: 12, height: 1.5, color: Colors.black87),
+                          style: TextStyle(
+                              fontSize: 12.sp,
+                              height: 1.5,
+                              color: Colors.black87),
                         ),
-                        SizedBox(height: 14),
-                        Text('4. USO DE GEOLOCALIZACIÓN Y DATOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        SizedBox(height: 6),
+                        SizedBox(height: 14.h),
+                        Text('4. USO DE GEOLOCALIZACIÓN Y DATOS',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                        SizedBox(height: 6.h),
                         Text(
                           'Al activar el mapa interactivo de Mapbox, usted consiente el uso temporal de su posición geográfica para ubicar centros deportivos y canchas cercanas de forma óptima.',
-                          style: TextStyle(fontSize: 12, height: 1.5, color: Colors.black87),
+                          style: TextStyle(
+                              fontSize: 12.sp,
+                              height: 1.5,
+                              color: Colors.black87),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 20.h),
                         Center(
                           child: Text(
                             '--- Fin del Documento ---',
-                            style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.bold),
                           ),
                         )
                       ],
@@ -209,9 +242,9 @@ class _TermsGuardOverlayState extends State<TermsGuardOverlay> {
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 20),
-              
+
+              SizedBox(height: 20.h),
+
               // 🔘 PANEL DE BOTONES
               Row(
                 children: [
@@ -219,28 +252,35 @@ class _TermsGuardOverlayState extends State<TermsGuardOverlay> {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.redAccent),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: EdgeInsets.symmetric(vertical: 16.r),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r)),
                       ),
-                      onPressed: () => exit(0), // Rechazar cierra inmediatamente el aplicativo
-                      child: const Text('RECHAZAR', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                      onPressed: () => exit(
+                          0), // Rechazar cierra inmediatamente el aplicativo
+                      child: const Text('RECHAZAR',
+                          style: TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16.w),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         disabledBackgroundColor: Colors.grey.shade300,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: EdgeInsets.symmetric(vertical: 16.r),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r)),
                       ),
                       // Deshabilitado hasta que se cumpla la validación de lectura completa
                       onPressed: _canAccept ? _aceptarTerminosLegales : null,
                       child: Text(
                         'CONTINUAR',
                         style: TextStyle(
-                          color: _canAccept ? Colors.white : Colors.grey.shade600,
+                          color:
+                              _canAccept ? Colors.white : Colors.grey.shade600,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/colors.dart';
 import 'chat_screen.dart';
 import 'notifications_screen.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // 🔹 LÓGICA PURA EXTRAÍDA PARA TESTING (Cumple con los criterios de testing aislado)
 class NotificationBannerLogic {
@@ -17,12 +18,14 @@ class NotificationBannerLogic {
   }) {
     // Regla 1: Ignorar si la notificación fue emitida antes de encender la aplicación
     if (fechaNotificacion.isBefore(fechaInicioApp)) return false;
-    
+
     // Regla 2: Si el usuario ya está chateando activamente en esa misma sala, no interrumpir con un PushUp
-    if (tipo == 'chat' && chatIdActivo != null && chatIdActivo == chatIdNotificacion) {
+    if (tipo == 'chat' &&
+        chatIdActivo != null &&
+        chatIdActivo == chatIdNotificacion) {
       return false;
     }
-    
+
     return true;
   }
 }
@@ -32,10 +35,12 @@ class GlobalNotificationWrapper extends StatefulWidget {
   const GlobalNotificationWrapper({super.key, required this.child});
 
   @override
-  State<GlobalNotificationWrapper> createState() => _GlobalNotificationWrapperState();
+  State<GlobalNotificationWrapper> createState() =>
+      _GlobalNotificationWrapperState();
 }
 
-class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> with SingleTickerProviderStateMixin {
+class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper>
+    with SingleTickerProviderStateMixin {
   final DateTime _appStartTime = DateTime.now();
   StreamSubscription<User?>? _authSubscription;
   StreamSubscription<QuerySnapshot>? _notificationSubscription;
@@ -49,7 +54,7 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> w
   @override
   void initState() {
     super.initState();
-    
+
     // Configuración de la física y duración del banner desplegable
     _animationController = AnimationController(
       vsync: this,
@@ -57,8 +62,9 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> w
     );
 
     _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0, -1.6), // Totalmente oculto arriba del notch/isla dinámica
-      end: Offset.zero,             // Posición visible natural de la UI
+      begin: const Offset(
+          0, -1.6), // Totalmente oculto arriba del notch/isla dinámica
+      end: Offset.zero, // Posición visible natural de la UI
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOutBack, // Efecto rebote premium de Push Notification
@@ -84,9 +90,10 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> w
         for (final change in snapshot.docChanges) {
           if (change.type != DocumentChangeType.added) continue;
           final data = change.doc.data() ?? {};
-          
+
           final rawDate = data['date'];
-          final dateNotif = rawDate is Timestamp ? rawDate.toDate() : DateTime.now();
+          final dateNotif =
+              rawDate is Timestamp ? rawDate.toDate() : DateTime.now();
 
           // Invocación de la lógica pura para decidir si la alerta debe materializarse
           final mostrar = NotificationBannerLogic.deberiaMostrarNotificacion(
@@ -107,7 +114,7 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> w
 
   void _triggerPushUpNotification(Map<String, dynamic> data) {
     _dismissTimer?.cancel();
-    
+
     setState(() {
       _currentNotificationData = data;
     });
@@ -160,7 +167,8 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> w
               child: SlideTransition(
                 position: _offsetAnimation,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: (screenWidth * 0.04).r, vertical: 8.r),
                   child: GestureDetector(
                     onTap: () {
                       final data = _currentNotificationData;
@@ -172,50 +180,57 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> w
                     child: Material(
                       elevation: 12,
                       color: const Color(0xFF232734),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(20.r),
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.r),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1.5),
+                          borderRadius: BorderRadius.circular(20.r),
+                          border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.2),
+                              width: 1.5),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(10),
+                              padding: EdgeInsets.all(10.r),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.15),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.notifications_active_rounded,
                                 color: AppColors.primary,
-                                size: 24,
+                                size: 24.r,
                               ),
                             ),
-                            const SizedBox(width: 14),
+                            SizedBox(width: 14.w),
                             Expanded(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _currentNotificationData!['title']?.toString() ?? 'Notificación',
-                                    style: const TextStyle(
+                                    _currentNotificationData!['title']
+                                            ?.toString() ??
+                                        'Notificación',
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
-                                      fontSize: 15,
+                                      fontSize: 15.sp,
                                       decoration: TextDecoration.none,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4.h),
                                   Text(
-                                    _currentNotificationData!['message']?.toString() ?? '',
+                                    _currentNotificationData!['message']
+                                            ?.toString() ??
+                                        '',
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white70,
-                                      fontSize: 13,
+                                      fontSize: 13.sp,
                                       decoration: TextDecoration.none,
                                       fontWeight: FontWeight.normal,
                                     ),
@@ -223,8 +238,9 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper> w
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.touch_app_rounded, color: Colors.white30, size: 16),
+                            SizedBox(width: 8.w),
+                            Icon(Icons.touch_app_rounded,
+                                color: Colors.white30, size: 16.r),
                           ],
                         ),
                       ),

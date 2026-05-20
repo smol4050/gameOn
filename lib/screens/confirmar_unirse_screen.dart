@@ -6,6 +6,7 @@ import '../theme/colors.dart';
 import 'main_navigation_screen.dart';
 import 'chat_screen.dart';
 import 'user_badge_name.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ConfirmarUnirseScreen extends StatefulWidget {
   final String matchId;
@@ -27,7 +28,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
   bool _isJoined = false;
   bool _isLoading = false;
   String _userRole = 'normal';
-  
+
   // Nuevas variables para almacenar los datos en vivo
   String _collectionName = 'matches';
   Map<String, dynamic> _liveData = {};
@@ -43,12 +44,18 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
   // Descubre si es un partido o un evento y descarga la info completa
   Future<void> _loadLiveMatchData() async {
     try {
-      var doc = await FirebaseFirestore.instance.collection('matches').doc(widget.matchId).get();
+      var doc = await FirebaseFirestore.instance
+          .collection('matches')
+          .doc(widget.matchId)
+          .get();
       if (doc.exists) {
         _collectionName = 'matches';
         if (mounted) setState(() => _liveData = doc.data() ?? {});
       } else {
-        doc = await FirebaseFirestore.instance.collection('events').doc(widget.matchId).get();
+        doc = await FirebaseFirestore.instance
+            .collection('events')
+            .doc(widget.matchId)
+            .get();
         if (doc.exists) {
           _collectionName = 'events';
           if (mounted) setState(() => _liveData = doc.data() ?? {});
@@ -69,12 +76,15 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     if (user == null) return;
 
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       if (userDoc.exists && mounted) {
         setState(() => _userRole = userDoc.data()?['role'] ?? 'normal');
       }
 
-       final doc = await FirebaseFirestore.instance
+      final doc = await FirebaseFirestore.instance
           .collection(_collectionName)
           .doc(widget.matchId)
           .collection('players')
@@ -122,11 +132,11 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
           .doc(user.uid)
           .collection('agenda')
           .doc(widget.matchId);
-      
-      
-       final matchRef =
-        FirebaseFirestore.instance.collection(_collectionName).doc(widget.matchId);
-       final playerRef = matchRef.collection('players').doc(user.uid);
+
+      final matchRef = FirebaseFirestore.instance
+          .collection(_collectionName)
+          .doc(widget.matchId);
+      final playerRef = matchRef.collection('players').doc(user.uid);
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final matchSnap = await transaction.get(matchRef);
@@ -175,7 +185,10 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
           'matchId': widget.matchId,
           'title': widget.matchData['title'],
           'date': widget.matchData['date'],
-          'sport': _liveData['sport'] ?? _liveData['category'] ?? widget.matchData['sport'] ?? widget.matchData['category'],
+          'sport': _liveData['sport'] ??
+              _liveData['category'] ??
+              widget.matchData['sport'] ??
+              widget.matchData['category'],
           'location': widget.matchData['location'],
           'type': _collectionName,
         });
@@ -230,10 +243,17 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('¿Eliminar actividad?'),
-        content: const Text('Esta acción es irreversible. Se cancelará la actividad y se notificará a todos los jugadores inscritos.'),
+        content: const Text(
+            'Esta acción es irreversible. Se cancelará la actividad y se notificará a todos los jugadores inscritos.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Eliminar',
+                  style: TextStyle(
+                      color: Colors.red, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -242,8 +262,10 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final matchRef = FirebaseFirestore.instance.collection(_collectionName).doc(widget.matchId);
-      
+      final matchRef = FirebaseFirestore.instance
+          .collection(_collectionName)
+          .doc(widget.matchId);
+
       // 1. Obtener todos los jugadores inscritos
       final playersSnap = await matchRef.collection('players').get();
       final batch = FirebaseFirestore.instance.batch();
@@ -251,14 +273,23 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
       // 2. Iterar sobre ellos para borrarlos de su agenda y mandarles notificación
       for (var playerDoc in playersSnap.docs) {
         final playerId = playerDoc.id;
-        
-        final agendaRef = FirebaseFirestore.instance.collection('users').doc(playerId).collection('agenda').doc(widget.matchId);
+
+        final agendaRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(playerId)
+            .collection('agenda')
+            .doc(widget.matchId);
         batch.delete(agendaRef);
 
-        final notificationRef = FirebaseFirestore.instance.collection('users').doc(playerId).collection('notifications').doc();
+        final notificationRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(playerId)
+            .collection('notifications')
+            .doc();
         batch.set(notificationRef, {
           'title': 'Actividad Cancelada',
-          'message': 'El organizador ha cancelado: ${_liveData['title'] ?? widget.matchData['title'] ?? 'la actividad'}',
+          'message':
+              'El organizador ha cancelado: ${_liveData['title'] ?? widget.matchData['title'] ?? 'la actividad'}',
           'date': FieldValue.serverTimestamp(),
           'type': 'cancel',
           'read': false,
@@ -270,45 +301,48 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
       await batch.commit();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Actividad eliminada correctamente')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Actividad eliminada correctamente')));
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen(initialIndex: 0)),
+          MaterialPageRoute(
+              builder: (_) => const MainNavigationScreen(initialIndex: 0)),
           (route) => false,
         );
       }
     } catch (e) {
       debugPrint('Error eliminando actividad: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-   Widget _buildInfoRow({
-     required IconData icon,
+  Widget _buildInfoRow({
+    required IconData icon,
     required String title,
     required String value,
     required double screenWidth,
     required double screenHeight,
   }) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.014),
+      padding: EdgeInsets.symmetric(vertical: (screenHeight * 0.014).r),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.all(screenWidth * 0.025),
+            padding: EdgeInsets.all((screenWidth * 0.025).r),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              borderRadius: BorderRadius.circular((screenWidth * 0.03).r),
             ),
-            child:
-                Icon(icon, color: AppColors.primary, size: screenWidth * 0.058),
+            child: Icon(icon,
+                color: AppColors.primary, size: (screenWidth * 0.058).r),
           ),
-          SizedBox(width: screenWidth * 0.04),
+          SizedBox(width: (screenWidth * 0.04).w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,16 +351,16 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                   title,
                   style: TextStyle(
                     color: Colors.grey,
-                    fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                    fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: screenHeight * 0.005),
+                SizedBox(height: (screenHeight * 0.005).h),
                 Text(
                   value,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                    fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp,
                     color: const Color(0xFF1F2937),
                   ),
                 ),
@@ -348,7 +382,8 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     if (_isFetchingData) {
       return const Scaffold(
         backgroundColor: Color(0xFFF5F7FA),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF155DFC))),
+        body:
+            Center(child: CircularProgressIndicator(color: Color(0xFF155DFC))),
       );
     }
     final title = data['title']?.toString() ?? 'Partido sin titulo';
@@ -371,15 +406,15 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     final joined = (data['joinedSlots'] as num?)?.toInt() ?? 0;
     final total = ((data['totalSlots'] as num?)?.toInt() ?? 10).clamp(1, 9999);
     final progress = (joined / total).clamp(0.0, 1.0);
-     final buttonHeight = (screenHeight * 0.064).clamp(52.0, 62.0);
+    final buttonHeight = (screenHeight * 0.064).clamp(52.0, 62.0);
 
     final isCreator = currentUserId == data['creatorId'];
     final isAdmin = _userRole == 'admin';
     final canDelete = isCreator || isAdmin;
 
-     return Scaffold(
-     backgroundColor: const Color(0xFFF5F7FA),
-     appBar: AppBar(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
         backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -390,29 +425,31 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
               onPressed: _isLoading ? null : _deleteActivity,
             ),
         ],
-       ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: ListView(
                 padding: EdgeInsets.symmetric(
-                    horizontal: pagePadding, vertical: screenHeight * 0.012),
+                    horizontal: pagePadding.r,
+                    vertical: (screenHeight * 0.012).r),
                 children: [
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: (screenWidth * 0.07).clamp(24.0, 30.0),
+                      fontSize: (screenWidth * 0.07).clamp(24.0, 30.0).sp,
                       fontWeight: FontWeight.w900,
                       height: 1.2,
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.032),
+                  SizedBox(height: (screenHeight * 0.032).h),
                   Container(
-                    padding: EdgeInsets.all(screenWidth * 0.05),
+                    padding: EdgeInsets.all((screenWidth * 0.05).r),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(screenWidth * 0.06),
+                      borderRadius:
+                          BorderRadius.circular((screenWidth * 0.06).r),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.03),
@@ -456,15 +493,15 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                       ],
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.035),
+                  SizedBox(height: (screenHeight * 0.035).h),
                   Text(
                     'Disponibilidad de cupos',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: (screenWidth * 0.045).clamp(16.0, 19.0),
+                      fontSize: (screenWidth * 0.045).clamp(16.0, 19.0).sp,
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.018),
+                  SizedBox(height: (screenHeight * 0.018).h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -480,9 +517,10 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                           style: const TextStyle(fontWeight: FontWeight.bold))
                     ],
                   ),
-                  SizedBox(height: screenHeight * 0.014),
+                  SizedBox(height: (screenHeight * 0.014).h),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                    borderRadius:
+                        BorderRadius.circular((screenWidth * 0.025).r),
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: screenHeight * 0.016,
@@ -490,17 +528,17 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                       backgroundColor: Colors.grey.shade200,
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.035),
+                  SizedBox(height: (screenHeight * 0.035).h),
                   Text(
                     'Jugadores Inscritos',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: (screenWidth * 0.045).clamp(16.0, 19.0),
+                      fontSize: (screenWidth * 0.045).clamp(16.0, 19.0).sp,
                     ),
                   ),
-                  SizedBox(height: screenHeight * 0.018),
+                  SizedBox(height: (screenHeight * 0.018).h),
                   StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
+                    stream: FirebaseFirestore.instance
                         .collection(_collectionName)
                         .doc(widget.matchId)
                         .collection('players')
@@ -554,7 +592,8 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                                     otherUserName:
                                         rawPlayer['name']?.toString() ??
                                             'Jugador',
-                                    otherUserRole: rawPlayer['role']?.toString(),
+                                    otherUserRole:
+                                        rawPlayer['role']?.toString(),
                                   ),
                                 ),
                               );
@@ -564,12 +603,12 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                       );
                     },
                   ),
-                  SizedBox(height: screenHeight * 0.024),
+                  SizedBox(height: (screenHeight * 0.024).h),
                 ],
               ),
             ),
             Container(
-              padding: EdgeInsets.all(pagePadding),
+              padding: EdgeInsets.all(pagePadding.r),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -583,21 +622,22 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
               child: SafeArea(
                 child: SizedBox(
                   width: double.infinity,
-                  height: buttonHeight,
+                  height: buttonHeight.h,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           _isJoined ? Colors.red : AppColors.primary,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                        borderRadius:
+                            BorderRadius.circular((screenWidth * 0.04).r),
                       ),
                       elevation: 0,
                     ),
                     onPressed: _isLoading ? null : _toggleAction,
                     child: _isLoading
                         ? SizedBox(
-                            width: screenWidth * 0.06,
-                            height: screenWidth * 0.06,
+                            width: (screenWidth * 0.06).w,
+                            height: (screenWidth * 0.06).h,
                             child: const CircularProgressIndicator(
                                 color: Colors.white, strokeWidth: 3),
                           )
@@ -609,7 +649,8 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
-                              fontSize: (screenWidth * 0.04).clamp(14.0, 17.0),
+                              fontSize:
+                                  (screenWidth * 0.04).clamp(14.0, 17.0).sp,
                             ),
                           ),
                   ),
@@ -652,11 +693,11 @@ class PlayerCardWidget extends StatelessWidget {
     final avatarRadius = screenWidth * 0.055;
 
     return Container(
-      margin: EdgeInsets.only(bottom: screenHeight * 0.014),
-      padding: EdgeInsets.all(screenWidth * 0.03),
+      margin: EdgeInsets.only(bottom: (screenHeight * 0.014).r),
+      padding: EdgeInsets.all((screenWidth * 0.03).r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.04),
+        borderRadius: BorderRadius.circular((screenWidth * 0.04).r),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
@@ -677,7 +718,7 @@ class PlayerCardWidget extends StatelessWidget {
                 ? const Icon(Icons.person, color: AppColors.primary)
                 : null,
           ),
-          SizedBox(width: screenWidth * 0.03),
+          SizedBox(width: (screenWidth * 0.03).w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -687,21 +728,21 @@ class PlayerCardWidget extends StatelessWidget {
                   role: role,
                   textStyle: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: (screenWidth * 0.038).clamp(13.0, 16.0),
+                    fontSize: (screenWidth * 0.038).clamp(13.0, 16.0).sp,
                     color: const Color(0xFF1F2937),
                   ),
                 ),
-                SizedBox(height: screenHeight * 0.005),
+                SizedBox(height: (screenHeight * 0.005).h),
                 Row(
                   children: [
                     Icon(Icons.star_rounded,
-                        color: Colors.amber, size: screenWidth * 0.04),
-                    SizedBox(width: screenWidth * 0.01),
+                        color: Colors.amber, size: (screenWidth * 0.04).r),
+                    SizedBox(width: (screenWidth * 0.01).w),
                     Text(
                       rating.toStringAsFixed(1),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+                        fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                         color: Colors.grey,
                       ),
                     ),
@@ -720,13 +761,13 @@ class PlayerCardWidget extends StatelessWidget {
                 icon: Icon(
                   Icons.chat_bubble_outline_rounded,
                   color: AppColors.primary,
-                  size: screenWidth * 0.05,
+                  size: (screenWidth * 0.05).r,
                 ),
                 onPressed: onChatPressed,
               ),
             )
           else
-            SizedBox(width: screenWidth * 0.1),
+            SizedBox(width: (screenWidth * 0.1).w),
         ],
       ),
     );

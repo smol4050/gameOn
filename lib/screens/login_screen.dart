@@ -5,6 +5,7 @@ import 'main_navigation_screen.dart';
 import '../services/auth_service.dart';
 import 'complete_profile_screen.dart';
 import '../theme/colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -129,30 +130,30 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 color: Colors.white,
                 padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: verticalPadding,
+                  horizontal: horizontalPadding.r,
+                  vertical: verticalPadding.r,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: screenHeight * 0.08),
+                    SizedBox(height: (screenHeight * 0.08).h),
                     Text(
                       'Game On',
                       style: TextStyle(
-                        fontSize: titleSize,
+                        fontSize: titleSize.sp,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.01),
+                    SizedBox(height: (screenHeight * 0.01).h),
                     Text(
                       'Encuentra tu partido',
                       style: TextStyle(
-                        fontSize: bodySize,
+                        fontSize: bodySize.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.045),
+                    SizedBox(height: (screenHeight * 0.045).h),
                     _inputField(
                       hint: 'Email',
                       icon: Icons.email_outlined,
@@ -162,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       radius: buttonRadius,
                       horizontalPadding: horizontalPadding * 0.7,
                     ),
-                    SizedBox(height: screenHeight * 0.018),
+                    SizedBox(height: (screenHeight * 0.018).h),
                     _inputField(
                       hint: 'Contrasena',
                       icon: Icons.lock_outline,
@@ -173,16 +174,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       radius: buttonRadius,
                       horizontalPadding: horizontalPadding * 0.7,
                     ),
-                    SizedBox(height: screenHeight * 0.018),
+                    SizedBox(height: (screenHeight * 0.018).h),
                     SizedBox(
                       width: double.infinity,
-                      height: fieldHeight,
+                      height: fieldHeight.h,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(buttonRadius),
+                            borderRadius: BorderRadius.circular(buttonRadius.r),
                           ),
                           elevation: 0,
                         ),
@@ -195,25 +196,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Text(
                                     'Iniciar Sesion',
                                     style: TextStyle(
-                                      fontSize: bodySize,
+                                      fontSize: bodySize.sp,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
                                     ),
                                   ),
-                                  SizedBox(width: screenWidth * 0.02),
+                                  SizedBox(width: (screenWidth * 0.02).w),
                                   Icon(
                                     Icons.arrow_forward,
-                                    size: bodySize * 1.15,
+                                    size: (bodySize * 1.15).r,
                                     color: Colors.white,
                                   ),
                                 ],
                               ),
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.018),
+                    SizedBox(height: (screenHeight * 0.018).h),
                     SizedBox(
                       width: double.infinity,
-                      height: fieldHeight,
+                      height: fieldHeight.h,
                       child: OutlinedButton(
                         onPressed: () {
                           Navigator.push(
@@ -225,42 +226,43 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFFE5E7EB)),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(buttonRadius),
+                            borderRadius: BorderRadius.circular(buttonRadius.r),
                           ),
                         ),
                         child: Text(
                           'Registrarse',
                           style: TextStyle(
-                            fontSize: bodySize,
+                            fontSize: bodySize.sp,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF364153),
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.022),
+                    SizedBox(height: (screenHeight * 0.022).h),
                     Center(
                       child: Text(
                         'Olvide mi contrasena',
                         style: TextStyle(
-                          fontSize: bodySize,
+                          fontSize: bodySize.sp,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.035),
+                    SizedBox(height: (screenHeight * 0.035).h),
                     Row(
                       children: [
                         const Expanded(
                             child: Divider(color: Color(0xFFE5E7EB))),
                         Padding(
                           padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.03),
+                              horizontal: (screenWidth * 0.03).r),
                           child: Text(
                             'O continua con',
                             style: TextStyle(
-                              fontSize: (screenWidth * 0.035).clamp(12.0, 15.0),
+                              fontSize:
+                                  (screenWidth * 0.035).clamp(12.0, 15.0).sp,
                               color: const Color(0xFF6A7282),
                             ),
                           ),
@@ -269,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Divider(color: Color(0xFFE5E7EB))),
                       ],
                     ),
-                    SizedBox(height: screenHeight * 0.035),
+                    SizedBox(height: (screenHeight * 0.035).h),
                     Row(
                       children: [
                         Expanded(
@@ -283,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             radius: buttonRadius,
                           ),
                         ),
-                        SizedBox(width: screenWidth * 0.04),
+                        SizedBox(width: (screenWidth * 0.04).w),
                         Expanded(
                           child: _socialButton(
                             text: 'Apple',
@@ -318,26 +320,26 @@ class _LoginScreenState extends State<LoginScreen> {
     required double horizontalPadding,
   }) {
     return Container(
-      height: height,
+      height: height.h,
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(radius.r),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
-        style: TextStyle(fontSize: fontSize),
+        style: TextStyle(fontSize: fontSize.sp),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
             color: Colors.black54,
-            fontSize: fontSize,
+            fontSize: fontSize.sp,
           ),
           border: InputBorder.none,
           prefixIcon: Icon(icon, color: Colors.grey),
           contentPadding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: height * 0.28,
+            horizontal: horizontalPadding.r,
+            vertical: (height * 0.28).r,
           ),
         ),
       ),
@@ -356,24 +358,24 @@ class _LoginScreenState extends State<LoginScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: height,
+        height: height.h,
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE5E7EB)),
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.circular(radius.r),
           color: Colors.white,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: iconSize),
-            SizedBox(width: height * 0.16),
+            Icon(icon, size: iconSize.r),
+            SizedBox(width: (height * 0.16).w),
             Flexible(
               child: Text(
                 text,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: fontSize,
+                  fontSize: fontSize.sp,
                 ),
               ),
             ),
