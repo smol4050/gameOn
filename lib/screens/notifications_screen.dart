@@ -101,9 +101,9 @@ class NotificationsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.textLight,
         elevation: 0,
         title: Text(
           'Notificaciones',
@@ -174,11 +174,11 @@ class NotificationsScreen extends StatelessWidget {
       margin: EdgeInsets.only(bottom: (screenHeight * 0.014).r),
       padding: EdgeInsets.all((screenWidth * 0.04).r),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.textLight,
         borderRadius: BorderRadius.circular((screenWidth * 0.04).r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.textSecondary.withValues(alpha: 0.03),
             blurRadius: screenWidth * 0.025,
             offset: Offset(0, screenHeight * 0.005),
           )
@@ -218,13 +218,14 @@ class NotificationsScreen extends StatelessWidget {
                 Text(
                   DateFormat('dd MMM, hh:mm a', 'es').format(date),
                   style: TextStyle(
-                      color: Colors.grey,
+                      color: AppColors.textSecondary,
                       fontSize: (screenWidth * 0.03).clamp(10.0, 13.0).sp),
                 ),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios_rounded, size: 14.r, color: Colors.grey),
+          Icon(Icons.arrow_forward_ios_rounded,
+              size: 14.r, color: AppColors.textSecondary),
         ],
       ),
     );
@@ -237,11 +238,11 @@ class NotificationsScreen extends StatelessWidget {
         children: [
           Icon(Icons.notifications_off_outlined,
               size: (screenWidth * 0.2).r,
-              color: Colors.grey.withValues(alpha: 0.5)),
+              color: AppColors.textSecondary.withValues(alpha: 0.5)),
           SizedBox(height: (screenHeight * 0.018).h),
           Text('No tienes notificaciones aún',
               style: TextStyle(
-                  color: Colors.grey,
+                  color: AppColors.textSecondary,
                   fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp)),
         ],
       ),

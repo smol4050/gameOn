@@ -58,18 +58,19 @@ class _LoadingScreenState extends State<LoadingScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.sports_soccer, size: iconSize.r, color: Colors.white),
+            Icon(Icons.sports_soccer,
+                size: iconSize.r, color: AppColors.textLight),
             SizedBox(height: (screenHeight * 0.028).h),
             Text(
               'Game On',
               style: TextStyle(
                 fontSize: (screenWidth * 0.105).clamp(36.0, 46.0).sp,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppColors.textLight,
               ),
             ),
             SizedBox(height: (screenHeight * 0.055).h),
-            const CircularProgressIndicator(color: Colors.white),
+            const CircularProgressIndicator(color: AppColors.textLight),
           ],
         ),
       ),

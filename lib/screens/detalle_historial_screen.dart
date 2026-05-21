@@ -67,7 +67,7 @@ class DetalleHistorialScreen extends StatelessWidget {
                 'Reportar a $usuarioNombre',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.redAccent,
+                    color: AppColors.error,
                     fontSize: 20.sp),
               ),
               content: SingleChildScrollView(
@@ -108,8 +108,8 @@ class DetalleHistorialScreen extends StatelessWidget {
                       maxLines: 3,
                       decoration: InputDecoration(
                         hintText: 'Describe brevemente lo sucedido...',
-                        hintStyle:
-                            TextStyle(fontSize: 13.sp, color: Colors.grey),
+                        hintStyle: TextStyle(
+                            fontSize: 13.sp, color: AppColors.textSecondary),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.r)),
                       ),
@@ -122,11 +122,12 @@ class DetalleHistorialScreen extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancelar',
                       style: TextStyle(
-                          color: Colors.grey, fontWeight: FontWeight.bold)),
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.bold)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
+                    backgroundColor: AppColors.error,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.r)),
                   ),
@@ -187,7 +188,8 @@ class DetalleHistorialScreen extends StatelessWidget {
                   },
                   child: const Text('Enviar Reporte',
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+                          color: AppColors.textLight,
+                          fontWeight: FontWeight.bold)),
                 ),
               ],
             );
@@ -210,9 +212,9 @@ class DetalleHistorialScreen extends StatelessWidget {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -231,11 +233,11 @@ class DetalleHistorialScreen extends StatelessWidget {
             margin: EdgeInsets.all(20.r),
             padding: EdgeInsets.all(22.r),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.textLight,
               borderRadius: BorderRadius.circular(24.r),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
+                    color: AppColors.textSecondary.withValues(alpha: 0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 4))
               ],
@@ -254,7 +256,8 @@ class DetalleHistorialScreen extends StatelessWidget {
                         fontSize: 15.sp, fontWeight: FontWeight.w600)),
                 SizedBox(height: 4.h),
                 Text('Finalizado el: $dateStr',
-                    style: TextStyle(color: Colors.grey, fontSize: 13.sp)),
+                    style: TextStyle(
+                        color: AppColors.textSecondary, fontSize: 13.sp)),
               ],
             ),
           ),
@@ -308,20 +311,22 @@ class DetalleHistorialScreen extends StatelessWidget {
                       margin: EdgeInsets.only(bottom: 12.r),
                       padding: EdgeInsets.all(14.r),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.textLight,
                         borderRadius: BorderRadius.circular(16.r),
                         border: Border.all(
-                            color: Colors.grey.withValues(alpha: 0.08)),
+                            color: AppColors.textSecondary
+                                .withValues(alpha: 0.08)),
                       ),
                       child: Row(
                         children: [
                           CircleAvatar(
                             radius: 22,
-                            backgroundColor: Colors.grey[200],
+                            backgroundColor: AppColors.progressTrack,
                             backgroundImage:
                                 pPhoto.isNotEmpty ? NetworkImage(pPhoto) : null,
                             child: pPhoto.isEmpty
-                                ? const Icon(Icons.person, color: Colors.grey)
+                                ? const Icon(Icons.person,
+                                    color: AppColors.textSecondary)
                                 : null,
                           ),
                           SizedBox(width: 14.w),
@@ -336,9 +341,9 @@ class DetalleHistorialScreen extends StatelessWidget {
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
-                                    Colors.red.withValues(alpha: 0.08),
+                                    AppColors.error.withValues(alpha: 0.08),
                                 elevation: 0,
-                                shadowColor: Colors.transparent,
+                                shadowColor: AppColors.transparent,
                                 padding: EdgeInsets.symmetric(
                                     horizontal: 12.r, vertical: 8.r),
                                 shape: RoundedRectangleBorder(
@@ -347,10 +352,10 @@ class DetalleHistorialScreen extends StatelessWidget {
                               onPressed: () => _mostrarDialogoReporte(
                                   context, pDoc.id, pName, players.length),
                               icon: Icon(Icons.report_problem_rounded,
-                                  color: Colors.redAccent, size: 14.r),
+                                  color: AppColors.error, size: 14.r),
                               label: Text('Reportar',
                                   style: TextStyle(
-                                      color: Colors.redAccent,
+                                      color: AppColors.error,
                                       fontSize: 12.sp,
                                       fontWeight: FontWeight.bold)),
                             )
@@ -360,7 +365,7 @@ class DetalleHistorialScreen extends StatelessWidget {
                                   horizontal: 12.r, vertical: 8.r),
                               child: Text('Tú',
                                   style: TextStyle(
-                                      color: Colors.grey,
+                                      color: AppColors.textSecondary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13.sp)),
                             )

@@ -36,9 +36,9 @@ class MessageBubble extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: isMe
               ? const LinearGradient(
-                  colors: [Color(0xFF7B61FF), Color(0xFF5B8CFF)])
+                  colors: [AppColors.primary, AppColors.primary])
               : null,
-          color: isMe ? null : const Color(0xFF232734),
+          color: isMe ? null : AppColors.chatBubbleOther,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(screenWidth * 0.05),
             topRight: Radius.circular(screenWidth * 0.05),
@@ -54,7 +54,7 @@ class MessageBubble extends StatelessWidget {
             Text(
               message,
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textLight.withValues(alpha: 0.9),
                 fontSize: (screenWidth * 0.038).clamp(13.0, 16.0).sp,
                 height: 1.4,
                 fontWeight: FontWeight.w500,
@@ -66,7 +66,7 @@ class MessageBubble extends StatelessWidget {
               child: Text(
                 time,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: AppColors.textLight.withValues(alpha: 0.7),
                   fontSize: (screenWidth * 0.028).clamp(10.0, 12.0).sp,
                 ),
               ),
@@ -192,7 +192,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('No pudimos enviar el mensaje: $e'),
-            backgroundColor: Colors.red),
+            backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) setState(() => _isSending = false);
@@ -208,20 +208,20 @@ class _ChatScreenState extends State<ChatScreen> {
     final inputHeight = (screenHeight * 0.058).clamp(46.0, 56.0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF181A20),
+      backgroundColor: AppColors.chatBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF181A20),
+        backgroundColor: AppColors.chatBackground,
         elevation: 0,
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: AppColors.textLight),
           onPressed: () => Navigator.pop(context),
         ),
         title: UserBadgeName(
           name: widget.otherUserName,
           role: widget.otherUserRole,
           textStyle: TextStyle(
-            color: Colors.white,
+            color: AppColors.textLight,
             fontWeight: FontWeight.bold,
             fontSize: (screenWidth * 0.045).clamp(16.0, 20.0).sp,
           ),
@@ -243,7 +243,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (snapshot.hasError) {
                   return const Center(
                     child: Text('No pudimos cargar el chat.',
-                        style: TextStyle(color: Colors.grey)),
+                        style: TextStyle(color: AppColors.textSecondary)),
                   );
                 }
 
@@ -257,7 +257,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   return const Center(
                     child: Text(
                       'No hay mensajes aun. Di hola!',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
                   );
                 }
@@ -300,9 +300,10 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: EdgeInsets.symmetric(
                 horizontal: inputPadding.r, vertical: (screenHeight * 0.014).r),
             decoration: BoxDecoration(
-              color: const Color(0xFF232734),
+              color: AppColors.chatSurface,
               border: Border(
-                  top: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
+                  top: BorderSide(
+                      color: AppColors.textSecondary.withValues(alpha: 0.1))),
             ),
             child: SafeArea(
               child: Row(
@@ -311,18 +312,19 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Container(
                       constraints: BoxConstraints(minHeight: inputHeight),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF181A20),
+                        color: AppColors.chatBackground,
                         borderRadius:
                             BorderRadius.circular((screenWidth * 0.06).r),
                       ),
                       child: TextField(
                         controller: _messageController,
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: AppColors.textLight),
                         minLines: 1,
                         maxLines: 4,
                         decoration: InputDecoration(
                           hintText: 'Escribe un mensaje...',
-                          hintStyle: const TextStyle(color: Colors.grey),
+                          hintStyle:
+                              const TextStyle(color: AppColors.textSecondary),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: (screenWidth * 0.05).r,
@@ -339,11 +341,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       padding: EdgeInsets.all((screenWidth * 0.035).r),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _isSending ? Colors.grey : AppColors.primary,
+                        color: _isSending
+                            ? AppColors.textSecondary
+                            : AppColors.primary,
                       ),
                       child: Icon(
                         Icons.send_rounded,
-                        color: Colors.white,
+                        color: AppColors.textLight,
                         size: (screenWidth * 0.05).r,
                       ),
                     ),

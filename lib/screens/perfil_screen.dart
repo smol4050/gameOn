@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../services/image_service.dart';
 import '../services/auth_service.dart';
 import '../theme/colors.dart';
+import '../constants/app_sports.dart';
 import 'login_screen.dart';
 import 'user_badge_name.dart';
 import 'ayuda_screen.dart';
@@ -77,7 +78,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           name = data['name'] ?? user.displayName ?? 'Usuario';
           level = data['level'] ?? 'NA';
           role = data['role']?.toString();
-          favoriteSport = data['sport'] ?? 'Fútbol';
+          favoriteSport = data['sport'] ?? AppSports.football;
           photoUrl = data['photoUrl'] ?? user.photoURL;
 
           rating = data['rating']?.toString() ?? '5.0';
@@ -181,13 +182,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.r)),
                       ),
-                      items: [
-                        'Fútbol',
-                        'Baloncesto',
-                        'Tenis',
-                        'Vóley',
-                        'Ultimate'
-                      ]
+                      items: AppSports.values
                           .map(
                               (s) => DropdownMenuItem(value: s, child: Text(s)))
                           .toList(),
@@ -216,7 +211,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancelar',
-                      style: TextStyle(color: Colors.grey)),
+                      style: TextStyle(color: AppColors.textSecondary)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -244,7 +239,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   },
                   child: const Text('Guardar',
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
+                          color: AppColors.textLight,
+                          fontWeight: FontWeight.bold)),
                 ),
               ],
             );
@@ -263,7 +259,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.only(bottom: 30.r),
@@ -315,7 +311,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 borderRadius: BorderRadius.circular(18.r),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: AppColors.textSecondary.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   )
@@ -323,12 +319,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.edit_outlined, color: Colors.white, size: 18.r),
+                  Icon(Icons.edit_outlined,
+                      color: AppColors.textLight, size: 18.r),
                   SizedBox(width: 8.w),
                   const Text(
                     'Editar',
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w700),
+                        color: AppColors.textLight,
+                        fontWeight: FontWeight.w700),
                   )
                 ],
               ),
@@ -350,11 +348,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
             height: 130.h,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
-              border: Border.all(color: Colors.white, width: 5),
+              color: AppColors.textLight,
+              border: Border.all(color: AppColors.textLight, width: 5),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: AppColors.textSecondary.withValues(alpha: 0.06),
                     blurRadius: 20,
                     offset: const Offset(0, 10))
               ],
@@ -362,7 +360,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
             child: ClipOval(
               child: photoUrl != null && photoUrl!.isNotEmpty
                   ? Image.network(photoUrl!, fit: BoxFit.cover)
-                  : Icon(Icons.person, size: 70.r, color: Colors.grey),
+                  : Icon(Icons.person,
+                      size: 70.r, color: AppColors.textSecondary),
             ),
           ),
           if (_isUploading)
@@ -370,10 +369,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
               width: 130.w,
               height: 130.h,
               decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: AppColors.textSecondary.withValues(alpha: 0.35),
                   shape: BoxShape.circle),
               child: const Center(
-                  child: CircularProgressIndicator(color: Colors.white)),
+                  child: CircularProgressIndicator(color: AppColors.textLight)),
             ),
           Positioned(
             bottom: 6,
@@ -384,10 +383,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
+                border: Border.all(color: AppColors.textLight, width: 3),
               ),
               child: Icon(Icons.camera_alt_rounded,
-                  color: Colors.white, size: 18.r),
+                  color: AppColors.textLight, size: 18.r),
             ),
           )
         ],
@@ -399,9 +398,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _badge('Nivel $level 🔥', Colors.orange),
+        _badge('Nivel $level 🔥', AppColors.warning),
         SizedBox(width: 12.w),
-        _badge(favoriteSport, Colors.blue),
+        _badge(favoriteSport, AppColors.primary),
       ],
     );
   }
@@ -456,11 +455,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
       child: Container(
         padding: EdgeInsets.all(22.r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular(28.r),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: AppColors.textSecondary.withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 6))
           ],
@@ -514,11 +513,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
         width: double.infinity,
         padding: EdgeInsets.all(22.r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular(28.r),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: AppColors.textSecondary.withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 6))
           ],
@@ -544,11 +543,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
         width: double.infinity,
         padding: EdgeInsets.all(26.r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular(28.r),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: AppColors.textSecondary.withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 6))
           ],
@@ -574,11 +573,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
       padding: EdgeInsets.all(24.r),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular(28.r),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: AppColors.textSecondary.withValues(alpha: 0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 6))
           ],
@@ -603,7 +602,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   color: AppColors.primary),
             ),
             const Divider(
-                height: 1, indent: 24, endIndent: 24, color: Color(0xFFF3F4F6)),
+                height: 1,
+                indent: 24,
+                endIndent: 24,
+                color: AppColors.progressTrack),
             ListTile(
               contentPadding:
                   EdgeInsets.symmetric(horizontal: 24.r, vertical: 8.r),
@@ -617,10 +619,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
               },
               title: Text('Cerrar sesión',
                   style: TextStyle(
-                      color: Colors.red,
+                      color: AppColors.error,
                       fontWeight: FontWeight.w700,
                       fontSize: 17.sp)),
-              trailing: const Icon(Icons.logout_rounded, color: Colors.red),
+              trailing:
+                  const Icon(Icons.logout_rounded, color: AppColors.error),
             ),
           ],
         ),

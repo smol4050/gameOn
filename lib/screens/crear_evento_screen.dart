@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
+import '../constants/app_sports.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -112,8 +114,8 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
     } catch (e) {
       debugPrint("Error subiendo imagen: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: $e'), backgroundColor: AppColors.error));
       }
     } finally {
       if (mounted) setState(() => _isUploadingImage = false);
@@ -162,15 +164,8 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
 
   List<Map<String, dynamic>> get _filteredVenues {
     return _venues.where((venue) {
-      bool sportMatch = false;
-      if (_selectedSport == null) {
-        sportMatch = true;
-      } else if (_selectedSport == 'Ultimate') {
-        sportMatch =
-            (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol');
-      } else {
-        sportMatch = venue['sport'] == _selectedSport;
-      }
+      final sportMatch =
+          _selectedSport == null || venue['sport'] == _selectedSport;
       final zoneMatch = _selectedZone == null || venue['zone'] == _selectedZone;
       final searchMatch = venue['name']
           .toString()
@@ -221,7 +216,7 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
         sourceLayer: "building",
         minZoom: 15.0,
         filter: ["==", "extrude", "true"],
-        fillExtrusionColor: Colors.grey.toARGB32(),
+        fillExtrusionColor: AppColors.textSecondary.toARGB32(),
         fillExtrusionOpacity: 0.6,
         fillExtrusionHeight: 30.0,
         fillExtrusionBase: 0.0,
@@ -243,7 +238,7 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
       style: TextStyle(
           fontSize: size.sp,
           fontFamily: Icons.location_on.fontFamily,
-          color: Colors.red),
+          color: AppColors.error),
     );
     textPainter.layout();
     textPainter.paint(canvas, const Offset(0.0, 0.0));
@@ -272,8 +267,8 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
         textField: v['name'],
         textSize: 14.0,
         textOffset: [0.0, 0.5],
-        textColor: Colors.black.toARGB32(),
-        textHaloColor: Colors.white.toARGB32(),
+        textColor: AppColors.textSecondary.toARGB32(),
+        textHaloColor: AppColors.textLight.toARGB32(),
         textHaloWidth: 3.0,
       );
     }).toList();
@@ -299,13 +294,38 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
         context: context,
         initialDate: DateTime.now(),
         firstDate: DateTime.now(),
-        lastDate: DateTime(2030));
+        lastDate: DateTime(2030),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: AppColors.textLight,
+                onSurface: AppColors.textSecondary,
+              ),
+            ),
+            child: child!,
+          );
+        });
     if (picked != null) setState(() => selectedDate = picked);
   }
 
   Future<void> _selectTime() async {
-    final TimeOfDay? picked =
-        await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final TimeOfDay? picked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: AppColors.textLight,
+                onSurface: AppColors.textSecondary,
+              ),
+            ),
+            child: child!,
+          );
+        });
     if (picked != null) setState(() => selectedTime = picked);
   }
 
@@ -335,13 +355,14 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Evento publicado exitosamente'),
-          backgroundColor: Colors.green));
+          backgroundColor: AppColors.primary));
       Navigator.pop(context);
     } catch (e) {
       debugPrint("Error al crear evento: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error al crear: $e'), backgroundColor: Colors.red));
+          content: Text('Error al crear: $e'),
+          backgroundColor: AppColors.error));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -350,18 +371,20 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.textLight,
         elevation: 0,
         title: const Text('Crear Evento',
             style: TextStyle(
-                color: Color(0xFF111827), fontWeight: FontWeight.w700)),
-        iconTheme: const IconThemeData(color: Color(0xFF111827)),
+                color: AppColors.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w800)),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
       body: _isLoadingVenues
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF155DFC)))
+              child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
               padding: EdgeInsets.all(24.r),
               child: Column(
@@ -381,27 +404,7 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                     height: 120.h,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
-                      children: [
-                        'Fútbol',
-                        'Baloncesto',
-                        'Tenis',
-                        'Ultimate',
-                        'Vóley'
-                      ].map((sport) {
-                        final emojis = {
-                          'Fútbol': '⚽',
-                          'Baloncesto': '🏀',
-                          'Tenis': '🎾',
-                          'Ultimate': '🥏',
-                          'Vóley': '🏐'
-                        };
-                        final colors = {
-                          'Fútbol': Colors.green,
-                          'Baloncesto': Colors.orange,
-                          'Tenis': Colors.red,
-                          'Ultimate': Colors.blue,
-                          'Vóley': Colors.deepPurple
-                        };
+                      children: AppSports.values.map((sport) {
                         return GestureDetector(
                           onTap: () {
                             setState(() {
@@ -412,8 +415,8 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                           },
                           child: _SportCard(
                               title: sport,
-                              emoji: emojis[sport]!,
-                              color: colors[sport]!,
+                              emoji: AppSports.emojiFor(sport),
+                              color: AppSports.colorFor(sport),
                               isSelected: _selectedSport == sport),
                         );
                       }).toList(),
@@ -429,12 +432,11 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                           padding: EdgeInsets.symmetric(
                               horizontal: 8.r, vertical: 4.r),
                           decoration: BoxDecoration(
-                              color: const Color(0xFF155DFC)
-                                  .withValues(alpha: 0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8.r)),
                           child: Text(_selectedLocation!,
                               style: TextStyle(
-                                  color: const Color(0xFF155DFC),
+                                  color: AppColors.primary,
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.bold)),
                         ),
@@ -459,11 +461,11 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                                 style: TextStyle(
                                     fontSize: 12.sp,
                                     color: isSelected
-                                        ? Colors.white
-                                        : Colors.black87)),
+                                        ? AppColors.textLight
+                                        : AppColors.textSecondary)),
                             selected: isSelected,
-                            selectedColor: const Color(0xFF155DFC),
-                            backgroundColor: Colors.white,
+                            selectedColor: AppColors.primary,
+                            backgroundColor: AppColors.textLight,
                             onSelected: (selected) {
                               setState(
                                   () => _selectedZone = selected ? zone : null);
@@ -481,11 +483,11 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                       height: 250.h,
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20.r),
-                          border: Border.all(
-                              color: const Color(0xFFE5E7EB), width: 2),
+                          border: Border.all(color: AppColors.border, width: 2),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
+                                color: AppColors.textSecondary
+                                    .withValues(alpha: 0.1),
                                 blurRadius: 15)
                           ]),
                       clipBehavior: Clip.antiAlias,
@@ -513,19 +515,21 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                               height: 45.h,
                               padding: EdgeInsets.symmetric(horizontal: 16.r),
                               decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.textLight,
                                   borderRadius: BorderRadius.circular(30.r),
                                   boxShadow: const [
                                     BoxShadow(
-                                        color: Colors.black26, blurRadius: 10)
+                                        color: AppColors.softOverlay,
+                                        blurRadius: 10)
                                   ]),
                               child: Row(children: [
                                 const Icon(Icons.search,
-                                    color: Color(0xFF155DFC)),
+                                    color: AppColors.primary),
                                 SizedBox(width: 10.w),
                                 Text('Toca para buscar en pantalla completa...',
                                     style: TextStyle(
-                                        color: Colors.grey, fontSize: 13.sp))
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13.sp))
                               ]),
                             ),
                           ),
@@ -534,10 +538,10 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                             right: 10,
                             child: FloatingActionButton.small(
                                 heroTag: "expandBtnEvent",
-                                backgroundColor: Colors.black87,
+                                backgroundColor: AppColors.textSecondary,
                                 onPressed: _abrirMapaCompleto,
                                 child: const Icon(Icons.fullscreen,
-                                    color: Colors.white)),
+                                    color: AppColors.textLight)),
                           )
                         ],
                       ),
@@ -594,17 +598,17 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                               WidgetStateProperty.resolveWith<Color>(
                                   (Set<WidgetState> states) =>
                                       states.contains(WidgetState.selected)
-                                          ? const Color(0xFF155DFC)
+                                          ? AppColors.primary
                                               .withValues(alpha: 0.15)
-                                          : Colors.white)),
+                                          : AppColors.textLight)),
                     ),
                   ),
                   SizedBox(height: 16.h),
                   Container(
                     decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.textLight,
                         borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: const Color(0xFFE5E7EB))),
+                        border: Border.all(color: AppColors.border)),
                     child: SwitchListTile(
                       title: const Text("Destacar Evento",
                           style: TextStyle(fontWeight: FontWeight.bold)),
@@ -612,13 +616,13 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                           ? "Aparecerá gigante en la pantalla."
                           : "Solo los administradores pueden destacar."),
                       value: _isFeatured,
-                      activeThumbColor: const Color(0xFFFF6900),
+                      activeThumbColor: AppColors.warning,
                       activeTrackColor:
-                          const Color(0xFFFF6900).withValues(alpha: 0.3),
+                          AppColors.warning.withValues(alpha: 0.3),
                       secondary: Icon(Icons.star,
                           color: widget.isAdmin
-                              ? const Color(0xFFFF6900)
-                              : Colors.grey),
+                              ? AppColors.warning
+                              : AppColors.textSecondary),
                       onChanged: widget.isAdmin
                           ? (bool value) => setState(() => _isFeatured = value)
                           : null,
@@ -639,9 +643,9 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
         height: 200.h,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular(20.r),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 2),
+          border: Border.all(color: AppColors.border, width: 2),
           image: _eventImageUrl != null
               ? DecorationImage(
                   image: NetworkImage(_eventImageUrl!), fit: BoxFit.cover)
@@ -649,17 +653,17 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
         ),
         child: _isUploadingImage
             ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF155DFC)))
+                child: CircularProgressIndicator(color: AppColors.primary))
             : _eventImageUrl == null
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.add_photo_alternate_rounded,
-                          size: 50.r, color: Colors.grey.shade400),
+                          size: 50.r, color: AppColors.border),
                       SizedBox(height: 10.h),
-                      Text("Añadir foto del evento (Opcional)",
+                      const Text("Añadir foto del evento (Opcional)",
                           style: TextStyle(
-                              color: Colors.grey.shade500,
+                              color: AppColors.textSecondary,
                               fontWeight: FontWeight.w600))
                     ],
                   )
@@ -670,9 +674,10 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                         child: Container(
                             padding: EdgeInsets.all(8.r),
                             decoration: const BoxDecoration(
-                                color: Colors.black54, shape: BoxShape.circle),
+                                color: AppColors.overlay,
+                                shape: BoxShape.circle),
                             child: Icon(Icons.edit,
-                                color: Colors.white, size: 20.r)))),
+                                color: AppColors.textLight, size: 20.r)))),
       ),
     );
   }
@@ -681,19 +686,19 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
     return Container(
       padding: EdgeInsets.all(24.r),
       decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE5E7EB)))),
+          color: AppColors.textLight,
+          border: Border(top: BorderSide(color: AppColors.border))),
       child: SizedBox(
         height: 58.h,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF155DFC),
-              disabledBackgroundColor: Colors.grey.shade300,
+              backgroundColor: AppColors.primary,
+              disabledBackgroundColor: AppColors.disabled,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14.r))),
           onPressed: (_isLoading || !_isFormValid) ? null : _crearEvento,
           child: _isLoading
-              ? const CircularProgressIndicator(color: Colors.white)
+              ? const CircularProgressIndicator(color: AppColors.textLight)
               : Text(
                   _isFormValid
                       ? 'PUBLICAR EVENTO'
@@ -701,7 +706,7 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
                   style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white)),
+                      color: AppColors.textLight)),
         ),
       ),
     );
@@ -713,14 +718,14 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
           style: TextStyle(
               fontSize: 15.sp,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF364153))));
+              color: AppColors.textSecondary)));
 
   Widget _input(TextEditingController controller, String hint) => Container(
         height: 54.h,
         padding: EdgeInsets.symmetric(horizontal: 16.r),
         decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            color: AppColors.textLight,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(14.r)),
         child: TextField(
             controller: controller,
@@ -744,11 +749,11 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
               height: 54.h,
               padding: EdgeInsets.symmetric(horizontal: 16.r),
               decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  color: AppColors.textLight,
+                  border: Border.all(color: AppColors.border),
                   borderRadius: BorderRadius.circular(14.r)),
               child: Row(children: [
-                Icon(icon, size: 18.r, color: Colors.grey),
+                Icon(icon, size: 18.r, color: AppColors.textSecondary),
                 SizedBox(width: 12.w),
                 Text(value, style: const TextStyle(fontWeight: FontWeight.w600))
               ]),
@@ -760,8 +765,8 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
   Widget _counterBox() => Container(
         height: 70.h,
         decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            color: AppColors.textLight,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(14.r)),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _circleBtn(
@@ -785,14 +790,14 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
           width: 40.w,
           height: 40.h,
           decoration: const BoxDecoration(
-              color: Color(0xFF155DFC), shape: BoxShape.circle),
-          child: Icon(icon, color: Colors.white, size: 20.r)));
+              color: AppColors.primary, shape: BoxShape.circle),
+          child: Icon(icon, color: AppColors.textLight, size: 20.r)));
 
   Widget _priceBox() => Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            color: AppColors.textLight,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(14.r)),
         child: TextField(
           controller: priceController,
@@ -800,7 +805,7 @@ class _CrearEventoScreenState extends State<CrearEventoScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(
               fontSize: 28.sp,
-              color: const Color(0xFF155DFC),
+              color: AppColors.primary,
               fontWeight: FontWeight.bold),
           decoration: const InputDecoration(
               prefixText: '\$ ', suffixText: ' COP', border: InputBorder.none),
@@ -825,15 +830,16 @@ class _SportCard extends StatelessWidget {
       margin: EdgeInsets.only(right: 12.r),
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16.r),
-          color: isSelected ? color : Colors.white,
+          color: isSelected ? color : AppColors.textLight,
           border: Border.all(
-              color: isSelected ? color : const Color(0xFFE5E7EB), width: 2)),
+              color: isSelected ? color : AppColors.border, width: 2)),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text(emoji, style: TextStyle(fontSize: 28.sp)),
         Text(title,
             style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : Colors.black87))
+                color:
+                    isSelected ? AppColors.textLight : AppColors.textSecondary))
       ]),
     );
   }
@@ -867,13 +873,11 @@ class _MapaPantallaCompletaEventoScreenState
 
   List<Map<String, dynamic>> get _filteredVenues {
     return widget.venues.where((venue) {
-      bool sportMatch = widget.selectedSport == null ||
-          (widget.selectedSport == 'Ultimate'
-              ? (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol')
-              : venue['sport'] == widget.selectedSport);
-      bool zoneMatch =
+      final sportMatch = widget.selectedSport == null ||
+          venue['sport'] == widget.selectedSport;
+      final zoneMatch =
           widget.selectedZone == null || venue['zone'] == widget.selectedZone;
-      bool searchMatch = venue['name']
+      final searchMatch = venue['name']
           .toString()
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
@@ -897,7 +901,7 @@ class _MapaPantallaCompletaEventoScreenState
         sourceLayer: "building",
         minZoom: 15.0,
         filter: ["==", "extrude", "true"],
-        fillExtrusionColor: Colors.grey.toARGB32(),
+        fillExtrusionColor: AppColors.textSecondary.toARGB32(),
         fillExtrusionOpacity: 0.6,
         fillExtrusionHeight: 30.0,
         fillExtrusionBase: 0.0,
@@ -938,7 +942,7 @@ class _MapaPantallaCompletaEventoScreenState
       style: TextStyle(
           fontSize: size.sp,
           fontFamily: Icons.location_on.fontFamily,
-          color: Colors.red),
+          color: AppColors.error),
     );
     textPainter.layout();
     textPainter.paint(canvas, const Offset(0.0, 0.0));
@@ -967,8 +971,8 @@ class _MapaPantallaCompletaEventoScreenState
         textField: v['name'],
         textSize: 14.0,
         textOffset: [0.0, 0.5],
-        textColor: Colors.black.toARGB32(),
-        textHaloColor: Colors.white.toARGB32(),
+        textColor: AppColors.textSecondary.toARGB32(),
+        textHaloColor: AppColors.textLight.toARGB32(),
         textHaloWidth: 3.0,
       );
     }).toList();
@@ -992,12 +996,12 @@ class _MapaPantallaCompletaEventoScreenState
   void _mostrarTarjetaCancha(Map<String, dynamic> venue) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) {
         return Container(
           padding: EdgeInsets.all(24.r),
           decoration: const BoxDecoration(
-              color: Colors.white,
+              color: AppColors.textLight,
               borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1009,11 +1013,11 @@ class _MapaPantallaCompletaEventoScreenState
                       height: 60.h,
                       width: 60.w,
                       decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
+                          color: AppColors.error.withValues(alpha: 0.1),
                           shape: BoxShape.circle),
                       child: Center(
                           child: Icon(Icons.location_on,
-                              color: Colors.red, size: 35.r))),
+                              color: AppColors.error, size: 35.r))),
                   SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
@@ -1023,13 +1027,13 @@ class _MapaPantallaCompletaEventoScreenState
                             style: TextStyle(
                                 fontSize: 20.sp,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF111827))),
+                                color: AppColors.textPrimary)),
                         SizedBox(height: 6.h),
                         Text('${venue['sport']} • Zona ${venue['zone']}',
                             style: TextStyle(
                                 fontSize: 15.sp,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.grey)),
+                                color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -1041,7 +1045,7 @@ class _MapaPantallaCompletaEventoScreenState
                 height: 56.h,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16.r))),
                   onPressed: () {
@@ -1052,7 +1056,7 @@ class _MapaPantallaCompletaEventoScreenState
                       style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white)),
+                          color: AppColors.textLight)),
                 ),
               ),
               SizedBox(height: 10.h),
@@ -1081,8 +1085,9 @@ class _MapaPantallaCompletaEventoScreenState
                   FloatingActionButton(
                       heroTag: "backBtnEvent",
                       mini: true,
-                      backgroundColor: Colors.white,
-                      child: const Icon(Icons.arrow_back, color: Colors.black),
+                      backgroundColor: AppColors.textLight,
+                      child: const Icon(Icons.arrow_back,
+                          color: AppColors.textSecondary),
                       onPressed: () => Navigator.pop(context)),
                   SizedBox(width: 12.w),
                   Expanded(
@@ -1090,10 +1095,11 @@ class _MapaPantallaCompletaEventoScreenState
                       height: 50.h,
                       padding: EdgeInsets.symmetric(horizontal: 16.r),
                       decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.textLight,
                           borderRadius: BorderRadius.circular(30.r),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 10)
+                            BoxShadow(
+                                color: AppColors.softOverlay, blurRadius: 10)
                           ]),
                       child: TextField(
                         controller: searchController,
@@ -1102,7 +1108,7 @@ class _MapaPantallaCompletaEventoScreenState
                           _updateMapMarkers();
                         },
                         decoration: const InputDecoration(
-                            icon: Icon(Icons.search, color: Color(0xFF155DFC)),
+                            icon: Icon(Icons.search, color: AppColors.primary),
                             hintText: 'Buscar lugar por nombre...',
                             border: InputBorder.none),
                       ),
@@ -1120,11 +1126,11 @@ class _MapaPantallaCompletaEventoScreenState
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 20.r, vertical: 12.r),
                 decoration: BoxDecoration(
-                    color: Colors.black87,
+                    color: AppColors.textSecondary,
                     borderRadius: BorderRadius.circular(30.r)),
                 child: Text("Toca un marcador 📍 para elegir",
                     style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textLight,
                         fontWeight: FontWeight.bold,
                         fontSize: 14.sp)),
               ),

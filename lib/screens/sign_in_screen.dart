@@ -10,6 +10,7 @@ import 'main_navigation_screen.dart';
 import '../services/auth_service.dart';
 import '../services/image_service.dart';
 import '../theme/colors.dart';
+import '../constants/app_sports.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -29,7 +30,7 @@ class _SignInScreenState extends State<SignInScreen> {
   String? selectedLevel;
   String? _photoUrl; // 🔹 Almacena la URL de la imagen subida
 
-  final sports = ['Futbol', 'Basket', 'Tenis', 'Ultimate', 'Otro'];
+  final sports = AppSports.values;
   final levels = ['Principiante', 'Intermedio', 'Avanzado'];
 
   final TextEditingController _nameController = TextEditingController();
@@ -74,8 +75,8 @@ class _SignInScreenState extends State<SignInScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Error al subir la imagen',
-                  style: TextStyle(color: Colors.white)),
-              backgroundColor: Colors.red),
+                  style: TextStyle(color: AppColors.textLight)),
+              backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -101,7 +102,7 @@ class _SignInScreenState extends State<SignInScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Las contraseñas no coinciden.'),
-            backgroundColor: Colors.red),
+            backgroundColor: AppColors.error),
       );
       return;
     }
@@ -138,14 +139,14 @@ class _SignInScreenState extends State<SignInScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(e.message ?? 'Error al registrar usuario'),
-            backgroundColor: Colors.red),
+            backgroundColor: AppColors.error),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('Error al guardar el perfil: $e'),
-            backgroundColor: Colors.red),
+            backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -176,7 +177,7 @@ class _SignInScreenState extends State<SignInScreen> {
     final avatarSize = (screenWidth * 0.28).clamp(92.0, 120.0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
+      backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -184,8 +185,8 @@ class _SignInScreenState extends State<SignInScreen> {
               height: headerHeight.h,
               padding: EdgeInsets.symmetric(horizontal: (screenWidth * 0.04).r),
               decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+                color: AppColors.textLight,
+                border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -221,10 +222,10 @@ class _SignInScreenState extends State<SignInScreen> {
                                 width: avatarSize.w,
                                 height: avatarSize.h,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE5E7EB),
+                                  color: AppColors.border,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                      color: Colors.white,
+                                      color: AppColors.textLight,
                                       width: screenWidth * 0.008),
                                 ),
                                 child: ClipOval(
@@ -252,11 +253,11 @@ class _SignInScreenState extends State<SignInScreen> {
                                     color: AppColors.primary,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: Colors.white,
+                                        color: AppColors.textLight,
                                         width: screenWidth * 0.008),
                                   ),
                                   child: Icon(Icons.camera_alt,
-                                      color: Colors.white,
+                                      color: AppColors.textLight,
                                       size: (avatarSize * 0.16).r),
                                 ),
                               ),
@@ -269,7 +270,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           style: TextStyle(
                               fontSize:
                                   (screenWidth * 0.035).clamp(12.0, 15.0).sp,
-                              color: const Color(0xFF6A7282)),
+                              color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -321,13 +322,13 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                color: AppColors.textLight)
                             : Text(
                                 'Completar Registro',
                                 style: TextStyle(
                                     fontSize: buttonTextSize.sp,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white),
+                                    color: AppColors.textLight),
                               ),
                       ),
                     ),
@@ -368,7 +369,7 @@ class _SignInScreenState extends State<SignInScreen> {
             style: TextStyle(
                 fontSize: fontSize.sp,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF364153))),
+                color: AppColors.textSecondary)),
       ),
     );
   }
@@ -378,9 +379,9 @@ class _SignInScreenState extends State<SignInScreen> {
     return Container(
       height: height.h,
       decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(radius.r),
-          color: Colors.white),
+          color: AppColors.textLight),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -402,9 +403,9 @@ class _SignInScreenState extends State<SignInScreen> {
     return Container(
       height: height.h,
       decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(radius.r),
-          color: Colors.white),
+          color: AppColors.textLight),
       child: TextField(
         controller: controller,
         obscureText: obscure,
@@ -415,7 +416,7 @@ class _SignInScreenState extends State<SignInScreen> {
               EdgeInsets.symmetric(horizontal: (horizontalPadding * 0.65).r),
           suffixIcon: IconButton(
               icon: Icon(obscure ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey),
+                  color: AppColors.textSecondary),
               onPressed: toggle),
         ),
       ),
@@ -433,9 +434,9 @@ class _SignInScreenState extends State<SignInScreen> {
       height: height.h,
       padding: EdgeInsets.symmetric(horizontal: (horizontalPadding * 0.5).r),
       decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(radius.r),
-          color: Colors.white),
+          color: AppColors.textLight),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,

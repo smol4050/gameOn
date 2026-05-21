@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
+import '../constants/app_sports.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui' as ui;
@@ -109,126 +111,126 @@ class _CrearScreenState extends State<CrearScreen> {
     final List<Map<String, dynamic>> defaultVenues = [
       {
         'name': 'EL Monumental Cali',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Norte',
         'lat': 3.4800,
         'lng': -76.5150
       },
       {
         'name': 'Fútbol 5 La Primera',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Norte',
         'lat': 3.4750,
         'lng': -76.5100
       },
       {
         'name': 'Centro Deportivo Las Palmas',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Sur',
         'lat': 3.3800,
         'lng': -76.5350
       },
       {
         'name': 'Complejo Deportivo 5-0',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Sur',
         'lat': 3.3750,
         'lng': -76.5300
       },
       {
         'name': 'Pascual Obrero',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Centro',
         'lat': 3.4450,
         'lng': -76.5250
       },
       {
         'name': 'Canchas Panamericana',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Centro',
         'lat': 3.4350,
         'lng': -76.5350
       },
       {
         'name': 'SAN SIRO Sintéticas',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Oriente',
         'lat': 3.4200,
         'lng': -76.4950
       },
       {
         'name': 'Canchas La 14 Oriente',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Oriente',
         'lat': 3.4250,
         'lng': -76.4900
       },
       {
         'name': 'Canchas Bellavista Sport',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Occidente',
         'lat': 3.4550,
         'lng': -76.5500
       },
       {
         'name': 'Canchas Los Cristales',
-        'sport': 'Fútbol',
+        'sport': AppSports.football,
         'zone': 'Occidente',
         'lat': 3.4450,
         'lng': -76.5600
       },
       {
         'name': 'Parque Los Álamos (Público)',
-        'sport': 'Ultimate',
+        'sport': AppSports.ultimate,
         'zone': 'Norte',
         'lat': 3.4930,
         'lng': -76.5050
       },
       {
         'name': 'Parque La Cascada (Público)',
-        'sport': 'Ultimate',
+        'sport': AppSports.ultimate,
         'zone': 'Sur',
         'lat': 3.4187,
         'lng': -76.5473
       },
       {
         'name': 'Cancha de la 66 (Público)',
-        'sport': 'Ultimate',
+        'sport': AppSports.ultimate,
         'zone': 'Sur',
         'lat': 3.3985,
         'lng': -76.5362
       },
       {
         'name': 'Cancha de la 70 (Público)',
-        'sport': 'Ultimate',
+        'sport': AppSports.ultimate,
         'zone': 'Norte',
         'lat': 3.4682,
         'lng': -76.4951
       },
       {
         'name': 'Canchas Univalle',
-        'sport': 'Ultimate',
+        'sport': AppSports.ultimate,
         'zone': 'Sur',
         'lat': 3.3766,
         'lng': -76.5332
       },
       {
         'name': 'Coliseo Evangelista Mora',
-        'sport': 'Vóley',
+        'sport': AppSports.volleyball,
         'zone': 'Centro',
         'lat': 3.4300,
         'lng': -76.5350
       },
       {
         'name': 'Club Deportivo Oeste Vóley',
-        'sport': 'Vóley',
+        'sport': AppSports.volleyball,
         'zone': 'Occidente',
         'lat': 3.4520,
         'lng': -76.5480
       },
       {
         'name': 'Arena Vóley Cali',
-        'sport': 'Vóley',
+        'sport': AppSports.volleyball,
         'zone': 'Oriente',
         'lat': 3.4050,
         'lng': -76.4950
@@ -260,15 +262,8 @@ class _CrearScreenState extends State<CrearScreen> {
 
   List<Map<String, dynamic>> get _filteredVenues {
     return _venues.where((venue) {
-      bool sportMatch = false;
-      if (_selectedSport == null) {
-        sportMatch = true;
-      } else if (_selectedSport == 'Ultimate') {
-        sportMatch =
-            (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol');
-      } else {
-        sportMatch = venue['sport'] == _selectedSport;
-      }
+      final sportMatch =
+          _selectedSport == null || venue['sport'] == _selectedSport;
       final zoneMatch = _selectedZone == null || venue['zone'] == _selectedZone;
       final searchMatch = venue['name']
           .toString()
@@ -321,7 +316,7 @@ class _CrearScreenState extends State<CrearScreen> {
         sourceLayer: "building",
         minZoom: 15.0,
         filter: ["==", "extrude", "true"],
-        fillExtrusionColor: Colors.grey.toARGB32(),
+        fillExtrusionColor: AppColors.textSecondary.toARGB32(),
         fillExtrusionOpacity: 0.6,
         fillExtrusionHeight: 30.0,
         fillExtrusionBase: 0.0,
@@ -343,7 +338,7 @@ class _CrearScreenState extends State<CrearScreen> {
       style: TextStyle(
           fontSize: size.sp,
           fontFamily: Icons.location_on.fontFamily,
-          color: Colors.red),
+          color: AppColors.error),
     );
     textPainter.layout();
     textPainter.paint(canvas, const Offset(0.0, 0.0));
@@ -372,8 +367,8 @@ class _CrearScreenState extends State<CrearScreen> {
         textField: v['name'],
         textSize: 14.0,
         textOffset: [0.0, 0.5],
-        textColor: Colors.black.toARGB32(),
-        textHaloColor: Colors.white.toARGB32(),
+        textColor: AppColors.textSecondary.toARGB32(),
+        textHaloColor: AppColors.textLight.toARGB32(),
         textHaloWidth: 3.0,
       );
     }).toList();
@@ -399,13 +394,38 @@ class _CrearScreenState extends State<CrearScreen> {
         context: context,
         initialDate: DateTime.now(),
         firstDate: DateTime.now(),
-        lastDate: DateTime(2030));
+        lastDate: DateTime(2030),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: AppColors.textLight,
+                onSurface: AppColors.textSecondary,
+              ),
+            ),
+            child: child!,
+          );
+        });
     if (picked != null) setState(() => selectedDate = picked);
   }
 
   Future<void> _selectTime() async {
-    final TimeOfDay? picked =
-        await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final TimeOfDay? picked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: AppColors.textLight,
+                onSurface: AppColors.textSecondary,
+              ),
+            ),
+            child: child!,
+          );
+        });
     if (picked != null) setState(() => selectedTime = picked);
   }
 
@@ -487,7 +507,7 @@ class _CrearScreenState extends State<CrearScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Partido creado y publicado'),
-          backgroundColor: Colors.green));
+          backgroundColor: AppColors.primary));
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -498,7 +518,8 @@ class _CrearScreenState extends State<CrearScreen> {
       debugPrint("Error al crear partido: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error al crear: $e'), backgroundColor: Colors.red));
+          content: Text('Error al crear: $e'),
+          backgroundColor: AppColors.error));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -507,18 +528,20 @@ class _CrearScreenState extends State<CrearScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.textLight,
         elevation: 0,
         title: const Text('Crear Partido',
             style: TextStyle(
-                color: Color(0xFF111827), fontWeight: FontWeight.w700)),
-        iconTheme: const IconThemeData(color: Color(0xFF111827)),
+                color: AppColors.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w800)),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
       body: _isLoadingVenues
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+              child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
               padding: EdgeInsets.all(24.r),
               child: Column(
@@ -534,28 +557,7 @@ class _CrearScreenState extends State<CrearScreen> {
                     height: 120.h,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
-                      children: [
-                        'Fútbol',
-                        'Baloncesto',
-                        'Tenis',
-                        'Ultimate',
-                        'Vóley'
-                      ].map((sport) {
-                        final emojis = {
-                          'Fútbol': '⚽',
-                          'Baloncesto': '🏀',
-                          'Tenis': '🎾',
-                          'Pádel': '🏓',
-                          'Ultimate': '🥏',
-                          'Vóley': '🏐'
-                        };
-                        final colors = {
-                          'Fútbol': Colors.green,
-                          'Baloncesto': Colors.orange,
-                          'Tenis': Colors.red,
-                          'Ultimate': Colors.blue,
-                          'Vóley': Colors.deepPurple
-                        };
+                      children: AppSports.values.map((sport) {
                         return GestureDetector(
                           onTap: () {
                             setState(() {
@@ -566,8 +568,8 @@ class _CrearScreenState extends State<CrearScreen> {
                           },
                           child: _SportCard(
                               title: sport,
-                              emoji: emojis[sport]!,
-                              color: colors[sport]!,
+                              emoji: AppSports.emojiFor(sport),
+                              color: AppSports.colorFor(sport),
                               isSelected: _selectedSport == sport),
                         );
                       }).toList(),
@@ -583,11 +585,11 @@ class _CrearScreenState extends State<CrearScreen> {
                           padding: EdgeInsets.symmetric(
                               horizontal: 8.r, vertical: 4.r),
                           decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8.r)),
                           child: Text(_selectedLocation!,
                               style: TextStyle(
-                                  color: Colors.green,
+                                  color: AppColors.primary,
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.bold)),
                         ),
@@ -612,11 +614,11 @@ class _CrearScreenState extends State<CrearScreen> {
                                 style: TextStyle(
                                     fontSize: 12.sp,
                                     color: isSelected
-                                        ? Colors.white
-                                        : Colors.black87)),
+                                        ? AppColors.textLight
+                                        : AppColors.textSecondary)),
                             selected: isSelected,
-                            selectedColor: const Color(0xFF2E7D32),
-                            backgroundColor: Colors.white,
+                            selectedColor: AppColors.primary,
+                            backgroundColor: AppColors.textLight,
                             onSelected: (selected) {
                               setState(
                                   () => _selectedZone = selected ? zone : null);
@@ -634,11 +636,11 @@ class _CrearScreenState extends State<CrearScreen> {
                       height: 250.h,
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20.r),
-                          border: Border.all(
-                              color: const Color(0xFFE5E7EB), width: 2),
+                          border: Border.all(color: AppColors.border, width: 2),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
+                                color: AppColors.textSecondary
+                                    .withValues(alpha: 0.1),
                                 blurRadius: 15)
                           ]),
                       clipBehavior: Clip.antiAlias,
@@ -665,18 +667,21 @@ class _CrearScreenState extends State<CrearScreen> {
                               height: 45.h,
                               padding: EdgeInsets.symmetric(horizontal: 16.r),
                               decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.textLight,
                                   borderRadius: BorderRadius.circular(30.r),
                                   boxShadow: const [
                                     BoxShadow(
-                                        color: Colors.black26, blurRadius: 10)
+                                        color: AppColors.softOverlay,
+                                        blurRadius: 10)
                                   ]),
                               child: Row(children: [
-                                const Icon(Icons.search, color: Colors.green),
+                                const Icon(Icons.search,
+                                    color: AppColors.primary),
                                 SizedBox(width: 10.w),
                                 Text('Toca para buscar en pantalla completa...',
                                     style: TextStyle(
-                                        color: Colors.grey, fontSize: 13.sp))
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13.sp))
                               ]),
                             ),
                           ),
@@ -685,10 +690,10 @@ class _CrearScreenState extends State<CrearScreen> {
                             right: 10,
                             child: FloatingActionButton.small(
                                 heroTag: "expandBtn",
-                                backgroundColor: Colors.black87,
+                                backgroundColor: AppColors.textSecondary,
                                 onPressed: _abrirMapaCompleto,
                                 child: const Icon(Icons.fullscreen,
-                                    color: Colors.white)),
+                                    color: AppColors.textLight)),
                           )
                         ],
                       ),
@@ -734,27 +739,25 @@ class _CrearScreenState extends State<CrearScreen> {
     return Container(
       padding: EdgeInsets.all(24.r),
       decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE5E7EB)))),
+          color: AppColors.textLight,
+          border: Border(top: BorderSide(color: AppColors.border))),
       child: SizedBox(
         height: 58.h,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              disabledBackgroundColor: Colors.grey.shade300,
+              backgroundColor: AppColors.primary,
+              disabledBackgroundColor: AppColors.disabled,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14.r))),
           onPressed: (_isLoading || !_isFormValid) ? null : _crearPartido,
           child: _isLoading
-              ? const CircularProgressIndicator(color: Colors.white)
+              ? const CircularProgressIndicator(color: AppColors.textLight)
               : Text(
-                  _isFormValid
-                      ? 'CREAR PARTIDO'
-                      : 'COMPLETE TODOS LOS CAMPOS',
+                  _isFormValid ? 'CREAR PARTIDO' : 'COMPLETE TODOS LOS CAMPOS',
                   style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white)),
+                      color: AppColors.textLight)),
         ),
       ),
     );
@@ -766,14 +769,14 @@ class _CrearScreenState extends State<CrearScreen> {
           style: TextStyle(
               fontSize: 15.sp,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF364153))));
+              color: AppColors.textSecondary)));
 
   Widget _input() => Container(
         height: 54.h,
         padding: EdgeInsets.symmetric(horizontal: 16.r),
         decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            color: AppColors.textLight,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(14.r)),
         child: TextField(
             controller: nameController,
@@ -797,11 +800,11 @@ class _CrearScreenState extends State<CrearScreen> {
               height: 54.h,
               padding: EdgeInsets.symmetric(horizontal: 16.r),
               decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  color: AppColors.textLight,
+                  border: Border.all(color: AppColors.border),
                   borderRadius: BorderRadius.circular(14.r)),
               child: Row(children: [
-                Icon(icon, size: 18.r, color: Colors.grey),
+                Icon(icon, size: 18.r, color: AppColors.textSecondary),
                 SizedBox(width: 12.w),
                 Text(value, style: const TextStyle(fontWeight: FontWeight.w600))
               ]),
@@ -813,8 +816,8 @@ class _CrearScreenState extends State<CrearScreen> {
   Widget _counterBox() => Container(
         height: 70.h,
         decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            color: AppColors.textLight,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(14.r)),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _circleBtn(
@@ -838,14 +841,14 @@ class _CrearScreenState extends State<CrearScreen> {
           width: 40.w,
           height: 40.h,
           decoration: const BoxDecoration(
-              color: Color(0xFF2E7D32), shape: BoxShape.circle),
-          child: Icon(icon, color: Colors.white, size: 20.r)));
+              color: AppColors.primary, shape: BoxShape.circle),
+          child: Icon(icon, color: AppColors.textLight, size: 20.r)));
 
   Widget _priceBox() => Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            color: AppColors.textLight,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(14.r)),
         child: TextField(
           controller: priceController,
@@ -853,7 +856,7 @@ class _CrearScreenState extends State<CrearScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(
               fontSize: 28.sp,
-              color: const Color(0xFF2E7D32),
+              color: AppColors.primary,
               fontWeight: FontWeight.bold),
           decoration: const InputDecoration(
               prefixText: '\$ ', suffixText: ' COP', border: InputBorder.none),
@@ -878,15 +881,16 @@ class _SportCard extends StatelessWidget {
       margin: EdgeInsets.only(right: 12.r),
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16.r),
-          color: isSelected ? color : Colors.white,
+          color: isSelected ? color : AppColors.textLight,
           border: Border.all(
-              color: isSelected ? color : const Color(0xFFE5E7EB), width: 2)),
+              color: isSelected ? color : AppColors.border, width: 2)),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text(emoji, style: TextStyle(fontSize: 28.sp)),
         Text(title,
             style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : Colors.black87))
+                color:
+                    isSelected ? AppColors.textLight : AppColors.textSecondary))
       ]),
     );
   }
@@ -920,13 +924,11 @@ class _MapaPantallaCompletaScreenState
 
   List<Map<String, dynamic>> get _filteredVenues {
     return widget.venues.where((venue) {
-      bool sportMatch = widget.selectedSport == null ||
-          (widget.selectedSport == 'Ultimate'
-              ? (venue['sport'] == 'Ultimate' || venue['sport'] == 'Fútbol')
-              : venue['sport'] == widget.selectedSport);
-      bool zoneMatch =
+      final sportMatch = widget.selectedSport == null ||
+          venue['sport'] == widget.selectedSport;
+      final zoneMatch =
           widget.selectedZone == null || venue['zone'] == widget.selectedZone;
-      bool searchMatch = venue['name']
+      final searchMatch = venue['name']
           .toString()
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
@@ -950,7 +952,7 @@ class _MapaPantallaCompletaScreenState
         sourceLayer: "building",
         minZoom: 15.0,
         filter: ["==", "extrude", "true"],
-        fillExtrusionColor: Colors.grey.toARGB32(),
+        fillExtrusionColor: AppColors.textSecondary.toARGB32(),
         fillExtrusionOpacity: 0.6,
         fillExtrusionHeight: 30.0,
         fillExtrusionBase: 0.0,
@@ -990,7 +992,7 @@ class _MapaPantallaCompletaScreenState
       style: TextStyle(
           fontSize: size.sp,
           fontFamily: Icons.location_on.fontFamily,
-          color: Colors.red),
+          color: AppColors.error),
     );
     textPainter.layout();
     textPainter.paint(canvas, const Offset(0.0, 0.0));
@@ -1019,8 +1021,8 @@ class _MapaPantallaCompletaScreenState
         textField: v['name'],
         textSize: 14.0,
         textOffset: [0.0, 0.5],
-        textColor: Colors.black.toARGB32(),
-        textHaloColor: Colors.white.toARGB32(),
+        textColor: AppColors.textSecondary.toARGB32(),
+        textHaloColor: AppColors.textLight.toARGB32(),
         textHaloWidth: 3.0,
       );
     }).toList();
@@ -1044,12 +1046,12 @@ class _MapaPantallaCompletaScreenState
   void _mostrarTarjetaCancha(Map<String, dynamic> venue) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) {
         return Container(
           padding: EdgeInsets.all(24.r),
           decoration: const BoxDecoration(
-              color: Colors.white,
+              color: AppColors.textLight,
               borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1061,11 +1063,11 @@ class _MapaPantallaCompletaScreenState
                       height: 60.h,
                       width: 60.w,
                       decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
+                          color: AppColors.error.withValues(alpha: 0.1),
                           shape: BoxShape.circle),
                       child: Center(
                           child: Icon(Icons.location_on,
-                              color: Colors.red, size: 35.r))),
+                              color: AppColors.error, size: 35.r))),
                   SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
@@ -1075,13 +1077,13 @@ class _MapaPantallaCompletaScreenState
                             style: TextStyle(
                                 fontSize: 20.sp,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF111827))),
+                                color: AppColors.textPrimary)),
                         SizedBox(height: 6.h),
                         Text('${venue['sport']} • Zona ${venue['zone']}',
                             style: TextStyle(
                                 fontSize: 15.sp,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.grey)),
+                                color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -1093,7 +1095,7 @@ class _MapaPantallaCompletaScreenState
                 height: 56.h,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16.r))),
                   onPressed: () {
@@ -1104,7 +1106,7 @@ class _MapaPantallaCompletaScreenState
                       style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white)),
+                          color: AppColors.textLight)),
                 ),
               ),
               SizedBox(height: 10.h),
@@ -1132,8 +1134,9 @@ class _MapaPantallaCompletaScreenState
                   FloatingActionButton(
                       heroTag: "backBtn",
                       mini: true,
-                      backgroundColor: Colors.white,
-                      child: const Icon(Icons.arrow_back, color: Colors.black),
+                      backgroundColor: AppColors.textLight,
+                      child: const Icon(Icons.arrow_back,
+                          color: AppColors.textSecondary),
                       onPressed: () => Navigator.pop(context)),
                   SizedBox(width: 12.w),
                   Expanded(
@@ -1141,10 +1144,11 @@ class _MapaPantallaCompletaScreenState
                       height: 50.h,
                       padding: EdgeInsets.symmetric(horizontal: 16.r),
                       decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.textLight,
                           borderRadius: BorderRadius.circular(30.r),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 10)
+                            BoxShadow(
+                                color: AppColors.softOverlay, blurRadius: 10)
                           ]),
                       child: TextField(
                         controller: searchController,
@@ -1153,7 +1157,7 @@ class _MapaPantallaCompletaScreenState
                           _updateMapMarkers();
                         },
                         decoration: const InputDecoration(
-                            icon: Icon(Icons.search, color: Colors.green),
+                            icon: Icon(Icons.search, color: AppColors.primary),
                             hintText: 'Buscar cancha por nombre...',
                             border: InputBorder.none),
                       ),
@@ -1171,11 +1175,11 @@ class _MapaPantallaCompletaScreenState
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 20.r, vertical: 12.r),
                 decoration: BoxDecoration(
-                    color: Colors.black87,
+                    color: AppColors.textSecondary,
                     borderRadius: BorderRadius.circular(30.r)),
                 child: Text("Toca un marcador 📍 para elegir",
                     style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textLight,
                         fontWeight: FontWeight.bold,
                         fontSize: 14.sp)),
               ),

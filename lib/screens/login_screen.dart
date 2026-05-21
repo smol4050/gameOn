@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message ?? 'Error al iniciar sesion'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     } finally {
@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final buttonRadius = screenWidth * 0.035;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
+      backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Center(
@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: Container(
                 width: double.infinity,
-                color: Colors.white,
+                color: AppColors.textLight,
                 padding: EdgeInsets.symmetric(
                   horizontal: horizontalPadding.r,
                   vertical: verticalPadding.r,
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: (screenHeight * 0.045).h),
                     _inputField(
-                      hint: 'Email',
+                      hint: 'Correo Electrónico',
                       icon: Icons.email_outlined,
                       controller: _emailController,
                       height: fieldHeight,
@@ -165,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: (screenHeight * 0.018).h),
                     _inputField(
-                      hint: 'Contrasena',
+                      hint: 'Contraseña',
                       icon: Icons.lock_outline,
                       obscure: true,
                       controller: _passwordController,
@@ -189,23 +189,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                color: AppColors.textLight)
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Iniciar Sesion',
+                                    'Iniciar Sesión',
                                     style: TextStyle(
                                       fontSize: bodySize.sp,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: AppColors.textLight,
                                     ),
                                   ),
                                   SizedBox(width: (screenWidth * 0.02).w),
                                   Icon(
                                     Icons.arrow_forward,
                                     size: (bodySize * 1.15).r,
-                                    color: Colors.white,
+                                    color: AppColors.textLight,
                                   ),
                                 ],
                               ),
@@ -224,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         },
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          side: const BorderSide(color: AppColors.border),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(buttonRadius.r),
                           ),
@@ -234,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(
                             fontSize: bodySize.sp,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF364153),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -253,8 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: (screenHeight * 0.035).h),
                     Row(
                       children: [
-                        const Expanded(
-                            child: Divider(color: Color(0xFFE5E7EB))),
+                        const Expanded(child: Divider(color: AppColors.border)),
                         Padding(
                           padding: EdgeInsets.symmetric(
                               horizontal: (screenWidth * 0.03).r),
@@ -263,12 +262,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                               fontSize:
                                   (screenWidth * 0.035).clamp(12.0, 15.0).sp,
-                              color: const Color(0xFF6A7282),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
-                        const Expanded(
-                            child: Divider(color: Color(0xFFE5E7EB))),
+                        const Expanded(child: Divider(color: AppColors.border)),
                       ],
                     ),
                     SizedBox(height: (screenHeight * 0.035).h),
@@ -322,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       height: height.h,
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(radius.r),
       ),
       child: TextField(
@@ -332,11 +330,11 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            color: Colors.black54,
+            color: AppColors.overlay,
             fontSize: fontSize.sp,
           ),
           border: InputBorder.none,
-          prefixIcon: Icon(icon, color: Colors.grey),
+          prefixIcon: Icon(icon, color: AppColors.textSecondary),
           contentPadding: EdgeInsets.symmetric(
             horizontal: horizontalPadding.r,
             vertical: (height * 0.28).r,
@@ -360,9 +358,9 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Container(
         height: height.h,
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(radius.r),
-          color: Colors.white,
+          color: AppColors.textLight,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

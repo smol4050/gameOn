@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'confirmar_unirse_screen.dart'; // 🔹 Navegación para unirse a eventos
@@ -52,7 +53,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return DefaultTabController(
       length: 2, // 🔹 Tenemos 2 pestañas: "Próximos" y "En Curso"
       child: Scaffold(
-        backgroundColor: const Color(0xFFF9FAFB),
+        backgroundColor: AppColors.scaffoldBackground,
 
         // 🔥 BOTÓN FLOTANTE: Solo aparece si _canCreateEvents es true
         floatingActionButton: _canCreateEvents
@@ -66,11 +67,12 @@ class _EventsScreenState extends State<EventsScreen> {
                     ),
                   );
                 },
-                backgroundColor: const Color(0xFF155DFC),
-                icon: const Icon(Icons.add, color: Colors.white),
+                backgroundColor: AppColors.primary,
+                icon: const Icon(Icons.add, color: AppColors.textLight),
                 label: const Text('Crear Evento',
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
+                        color: AppColors.textLight,
+                        fontWeight: FontWeight.bold)),
               )
             : null,
 
@@ -82,8 +84,9 @@ class _EventsScreenState extends State<EventsScreen> {
               Container(
                 padding: EdgeInsets.fromLTRB(24.r, 26.r, 24.r, 0.r),
                 decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+                  color: AppColors.textLight,
+                  border: Border(
+                      bottom: BorderSide(color: AppColors.progressTrack)),
                 ),
                 child: Column(
                   children: [
@@ -98,7 +101,7 @@ class _EventsScreenState extends State<EventsScreen> {
                               style: TextStyle(
                                 fontSize: 34.sp,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF155DFC),
+                                color: AppColors.primary,
                               ),
                             ),
                             SizedBox(height: 4.h),
@@ -106,7 +109,7 @@ class _EventsScreenState extends State<EventsScreen> {
                               'Torneos y competencias oficiales',
                               style: TextStyle(
                                   fontSize: 14.sp,
-                                  color: const Color(0xFF4A5565)),
+                                  color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -115,7 +118,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           icon: Icon(
                             Icons.notifications_none_rounded,
                             size: 28.r,
-                            color: const Color(0xFF374151),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -123,9 +126,9 @@ class _EventsScreenState extends State<EventsScreen> {
                     SizedBox(height: 16.h),
                     // 🔹 TAB BAR (Controlador de pestañas)
                     TabBar(
-                      indicatorColor: const Color(0xFF155DFC),
-                      labelColor: const Color(0xFF155DFC),
-                      unselectedLabelColor: const Color(0xFF6A7282),
+                      indicatorColor: AppColors.primary,
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.textSecondary,
                       labelStyle: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 16.sp),
                       tabs: const [
@@ -172,7 +175,7 @@ class _EventsScreenState extends State<EventsScreen> {
               status == 'upcoming'
                   ? 'No hay eventos próximos aún.'
                   : 'No hay eventos en curso.',
-              style: TextStyle(color: const Color(0xFF6B7280), fontSize: 16.sp),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 16.sp),
             ),
           );
         }
@@ -209,10 +212,11 @@ class _EventsScreenState extends State<EventsScreen> {
       BuildContext context, Map<String, dynamic> featuredData, String eventId) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.textLight,
         borderRadius: BorderRadius.circular(28.r),
         boxShadow: const [
-          BoxShadow(blurRadius: 18, offset: Offset(0, 6), color: Colors.black12)
+          BoxShadow(
+              blurRadius: 18, offset: Offset(0, 6), color: AppColors.softShadow)
         ],
       ),
       child: Column(
@@ -237,7 +241,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black54],
+                    colors: [AppColors.transparent, AppColors.overlay],
                   ),
                 ),
               ),
@@ -248,12 +252,12 @@ class _EventsScreenState extends State<EventsScreen> {
                   padding:
                       EdgeInsets.symmetric(horizontal: 16.r, vertical: 8.r),
                   decoration: BoxDecoration(
-                      color: const Color(0xFFFF6900),
+                      color: AppColors.warning,
                       borderRadius: BorderRadius.circular(50.r)),
                   child: Text(
                     'DESTACADO',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textLight,
                         fontWeight: FontWeight.bold,
                         fontSize: 12.sp),
                   ),
@@ -265,7 +269,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Text(
                   featuredData['title'] ?? 'Evento',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textLight,
                       fontSize: 30.sp,
                       fontWeight: FontWeight.bold),
                 ),
@@ -291,7 +295,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16.r),
                       gradient: const LinearGradient(
-                          colors: [Color(0xFF155DFC), Color(0xFF2E7D32)]),
+                          colors: [AppColors.primary, AppColors.primary]),
                     ),
                     child: ElevatedButton(
                       onPressed: () {
@@ -303,14 +307,14 @@ class _EventsScreenState extends State<EventsScreen> {
                                     matchData: featuredData)));
                       },
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent),
+                          backgroundColor: AppColors.transparent,
+                          shadowColor: AppColors.transparent),
                       child: Text(
                         'Inscribirse Ahora',
                         style: TextStyle(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white),
+                            color: AppColors.textLight),
                       ),
                     ),
                   ),
@@ -332,11 +336,13 @@ class _EventsScreenState extends State<EventsScreen> {
       child: Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular(20.r),
           boxShadow: const [
             BoxShadow(
-                blurRadius: 10, offset: Offset(0, 3), color: Colors.black12)
+                blurRadius: 10,
+                offset: Offset(0, 3),
+                color: AppColors.softShadow)
           ],
         ),
         child: Row(
@@ -359,11 +365,11 @@ class _EventsScreenState extends State<EventsScreen> {
                       padding:
                           EdgeInsets.symmetric(horizontal: 10.r, vertical: 4.r),
                       decoration: BoxDecoration(
-                          color: const Color(0xFFFF6900),
+                          color: AppColors.warning,
                           borderRadius: BorderRadius.circular(8.r)),
                       child: Text('EN CURSO',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textLight,
                               fontWeight: FontWeight.bold,
                               fontSize: 10.sp)),
                     ),
@@ -379,7 +385,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 17.sp,
-                          color: const Color(0xFF111827))),
+                          color: AppColors.textPrimary)),
                   SizedBox(height: 8.h),
                   _miniInfo(Icons.attach_money, event['price'] ?? 'Gratis',
                       orange: true),
@@ -399,14 +405,15 @@ class _EventsScreenState extends State<EventsScreen> {
                                     matchId: eventId, matchData: event)));
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32),
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10.r)),
                       ),
                       child: const Text(
                         'Ver más',
                         style: TextStyle(
-                            fontWeight: FontWeight.w600, color: Colors.white),
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textLight),
                       ),
                     ),
                   ),
@@ -422,10 +429,10 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget _infoRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF155DFC), size: 20.r),
+        Icon(icon, color: AppColors.primary, size: 20.r),
         SizedBox(width: 12.w),
         Text(text,
-            style: TextStyle(color: const Color(0xFF4A5565), fontSize: 15.sp)),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 15.sp)),
       ],
     );
   }
@@ -435,12 +442,11 @@ class _EventsScreenState extends State<EventsScreen> {
       children: [
         Icon(icon,
             size: 14.r,
-            color: orange ? const Color(0xFFF54900) : const Color(0xFF6A7282)),
+            color: orange ? AppColors.warning : AppColors.textSecondary),
         SizedBox(width: 8.w),
         Text(text,
             style: TextStyle(
-                color:
-                    orange ? const Color(0xFFF54900) : const Color(0xFF4A5565),
+                color: orange ? AppColors.warning : AppColors.textSecondary,
                 fontSize: 12.sp)),
       ],
     );

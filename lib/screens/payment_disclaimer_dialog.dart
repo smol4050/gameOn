@@ -14,7 +14,7 @@ class PaymentDisclaimerDialog {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
           title: Row(
             children: [
-              Icon(Icons.gavel_rounded, color: Colors.orangeAccent, size: 28.r),
+              Icon(Icons.gavel_rounded, color: AppColors.warning, size: 28.r),
               SizedBox(width: 12.w),
               Text('Aviso de Transparencia',
                   style:
@@ -33,7 +33,9 @@ class PaymentDisclaimerDialog {
               Text(
                 'La aplicación NO recauda, gestiona, ni se hace responsable bajo ningún concepto del dinero de inscripciones o reservas de canchas.',
                 style: TextStyle(
-                    color: Colors.black87, fontSize: 13.sp, height: 1.4),
+                    color: AppColors.textSecondary,
+                    fontSize: 13.sp,
+                    height: 1.4),
               ),
               SizedBox(height: 14.h),
               Container(
@@ -62,7 +64,7 @@ class PaymentDisclaimerDialog {
               onPressed: () => Navigator.pop(context),
               child: const Text('Entendido y Aceptar',
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+                      color: AppColors.textLight, fontWeight: FontWeight.bold)),
             ),
           ],
         );

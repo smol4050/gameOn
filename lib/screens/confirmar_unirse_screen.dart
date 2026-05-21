@@ -230,7 +230,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('No pudimos actualizar tu asistencia: $e'),
-              backgroundColor: Colors.red),
+              backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -253,7 +253,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Eliminar',
                   style: TextStyle(
-                      color: Colors.red, fontWeight: FontWeight.bold))),
+                      color: AppColors.error, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -313,8 +313,8 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     } catch (e) {
       debugPrint('Error eliminando actividad: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: $e'), backgroundColor: AppColors.error));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -350,7 +350,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    color: Colors.grey,
+                    color: AppColors.textSecondary,
                     fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                     fontWeight: FontWeight.w600,
                   ),
@@ -361,7 +361,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp,
-                    color: const Color(0xFF1F2937),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -381,9 +381,9 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     final data = _liveData;
     if (_isFetchingData) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
+        backgroundColor: AppColors.scaffoldBackground,
         body:
-            Center(child: CircularProgressIndicator(color: Color(0xFF155DFC))),
+            Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
     final title = data['title']?.toString() ?? 'Partido sin titulo';
@@ -413,15 +413,15 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
     final canDelete = isCreator || isAdmin;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: AppColors.textSecondary),
         actions: [
           if (canDelete)
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              icon: const Icon(Icons.delete_outline, color: AppColors.error),
               onPressed: _isLoading ? null : _deleteActivity,
             ),
         ],
@@ -447,12 +447,13 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                   Container(
                     padding: EdgeInsets.all((screenWidth * 0.05).r),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.textLight,
                       borderRadius:
                           BorderRadius.circular((screenWidth * 0.06).r),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
+                          color:
+                              AppColors.textSecondary.withValues(alpha: 0.03),
                           blurRadius: screenWidth * 0.025,
                           offset: Offset(0, screenHeight * 0.005),
                         )
@@ -510,7 +511,8 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                           '$joined de $total jugadores',
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              color: Colors.grey, fontWeight: FontWeight.w600),
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                       Text('${(progress * 100).toInt()}% lleno',
@@ -524,8 +526,9 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: screenHeight * 0.016,
-                      color: progress >= 1.0 ? Colors.red : AppColors.primary,
-                      backgroundColor: Colors.grey.shade200,
+                      color:
+                          progress >= 1.0 ? AppColors.error : AppColors.primary,
+                      backgroundColor: AppColors.progressTrack,
                     ),
                   ),
                   SizedBox(height: (screenHeight * 0.035).h),
@@ -553,7 +556,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                       }
                       if (snapshot.data!.docs.isEmpty) {
                         return const Text('Se el primero en unirte',
-                            style: TextStyle(color: Colors.grey));
+                            style: TextStyle(color: AppColors.textSecondary));
                       }
 
                       return ListView.builder(
@@ -610,10 +613,10 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
             Container(
               padding: EdgeInsets.all(pagePadding.r),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.textLight,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: AppColors.textSecondary.withValues(alpha: 0.05),
                     blurRadius: screenWidth * 0.025,
                     offset: Offset(0, -screenHeight * 0.005),
                   )
@@ -626,7 +629,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          _isJoined ? Colors.red : AppColors.primary,
+                          _isJoined ? AppColors.error : AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular((screenWidth * 0.04).r),
@@ -639,7 +642,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                             width: (screenWidth * 0.06).w,
                             height: (screenWidth * 0.06).h,
                             child: const CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 3),
+                                color: AppColors.textLight, strokeWidth: 3),
                           )
                         : Text(
                             _isJoined
@@ -647,7 +650,7 @@ class _ConfirmarUnirseScreenState extends State<ConfirmarUnirseScreen> {
                                 : 'CONFIRMAR Y UNIRME',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textLight,
                               fontWeight: FontWeight.w800,
                               fontSize:
                                   (screenWidth * 0.04).clamp(14.0, 17.0).sp,
@@ -696,12 +699,12 @@ class PlayerCardWidget extends StatelessWidget {
       margin: EdgeInsets.only(bottom: (screenHeight * 0.014).r),
       padding: EdgeInsets.all((screenWidth * 0.03).r),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.textLight,
         borderRadius: BorderRadius.circular((screenWidth * 0.04).r),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.progressTrack),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.textSecondary.withValues(alpha: 0.02),
             blurRadius: screenWidth * 0.02,
             offset: Offset(0, screenHeight * 0.002),
           )
@@ -729,21 +732,21 @@ class PlayerCardWidget extends StatelessWidget {
                   textStyle: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: (screenWidth * 0.038).clamp(13.0, 16.0).sp,
-                    color: const Color(0xFF1F2937),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 SizedBox(height: (screenHeight * 0.005).h),
                 Row(
                   children: [
                     Icon(Icons.star_rounded,
-                        color: Colors.amber, size: (screenWidth * 0.04).r),
+                        color: AppColors.warning, size: (screenWidth * 0.04).r),
                     SizedBox(width: (screenWidth * 0.01).w),
                     Text(
                       rating.toStringAsFixed(1),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
-                        color: Colors.grey,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],

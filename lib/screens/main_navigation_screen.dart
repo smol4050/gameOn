@@ -59,7 +59,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           backgroundColor: AppColors.primary,
           shape: const CircleBorder(),
-          child: Icon(Icons.add, color: Colors.white, size: (fabSize * 0.48).r),
+          child: Icon(Icons.add,
+              color: AppColors.textLight, size: (fabSize * 0.48).r),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -115,7 +116,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           Icon(
             icon,
             size: (screenWidth * 0.055).clamp(20.0, 26.0).r,
-            color: isActive ? AppColors.primary : Colors.grey,
+            color: isActive ? AppColors.primary : AppColors.textSecondary,
           ),
           Text(
             label,
@@ -123,7 +124,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: (screenWidth * 0.03).clamp(10.0, 12.5).sp,
-              color: isActive ? AppColors.primary : Colors.grey,
+              color: isActive ? AppColors.primary : AppColors.textSecondary,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),
           ),

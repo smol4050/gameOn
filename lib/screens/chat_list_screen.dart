@@ -19,9 +19,9 @@ class ChatListScreen extends StatelessWidget {
     final currentEmail = currentUser?.email;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.textLight,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -155,11 +155,11 @@ class ChatListScreen extends StatelessWidget {
         margin: EdgeInsets.only(bottom: (screenHeight * 0.018).r),
         padding: EdgeInsets.all((screenWidth * 0.04).r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular((screenWidth * 0.06).r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: AppColors.textSecondary.withValues(alpha: 0.03),
               blurRadius: screenWidth * 0.025,
               offset: Offset(0, screenHeight * 0.005),
             ),
@@ -210,7 +210,7 @@ class ChatListScreen extends StatelessWidget {
                         time,
                         style: TextStyle(
                           fontSize: (screenWidth * 0.03).clamp(10.0, 13.0).sp,
-                          color: Colors.grey,
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

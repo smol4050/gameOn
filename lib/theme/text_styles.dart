@@ -73,14 +73,14 @@ class AppTextStyles {
   static final TextStyle button = TextStyle(
     fontSize: 16.sp,
     fontWeight: FontWeight.w600,
-    color: Colors.white,
+    color: AppColors.textLight,
     fontFamily: 'Inter',
   );
 
   static final TextStyle buttonSmall = TextStyle(
     fontSize: 14.sp,
     fontWeight: FontWeight.w600,
-    color: Colors.white,
+    color: AppColors.textLight,
     fontFamily: 'Inter',
   );
 

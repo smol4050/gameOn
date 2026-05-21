@@ -2,16 +2,16 @@ class PaymentDisclaimerLogic {
   /// Analiza si el precio actual dictamina un cobro externo y requiere aviso legal.
   static bool necesitaMostrarAviso(dynamic price) {
     if (price == null) return false;
-    
+
     // Si viene como número directamente
     if (price is num) {
       return price > 0;
     }
-    
+
     // Si viene como String (ej: "$2000 COP" o "2000") limpiamos caracteres
     final cleanString = price.toString().replaceAll(RegExp(r'[^0-9]'), '');
     final parsedPrice = int.tryParse(cleanString) ?? 0;
-    
+
     return parsedPrice > 0;
   }
 }

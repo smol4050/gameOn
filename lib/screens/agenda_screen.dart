@@ -15,9 +15,12 @@ class AgendaScreen extends StatelessWidget {
     final lowerSport = sport.toLowerCase();
     if (lowerSport.contains('futbol') || lowerSport.contains('fútbol')) {
       return Icons.sports_soccer;
-    } else if (lowerSport.contains('baloncesto') || lowerSport.contains('basket')) {
+    } else if (lowerSport.contains('baloncesto') ||
+        lowerSport.contains('basket')) {
       return Icons.sports_basketball;
-    } else if (lowerSport.contains('tenis') || lowerSport.contains('padel') || lowerSport.contains('pádel')) {
+    } else if (lowerSport.contains('tenis') ||
+        lowerSport.contains('padel') ||
+        lowerSport.contains('pádel')) {
       return Icons.sports_tennis;
     } else if (lowerSport.contains('ultimate')) {
       return Icons.animation;
@@ -36,7 +39,7 @@ class AgendaScreen extends StatelessWidget {
     final userId = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,11 +309,11 @@ class AgendaScreen extends StatelessWidget {
         margin: EdgeInsets.only(bottom: (screenHeight * 0.026).r),
         padding: EdgeInsets.all((screenWidth * 0.055).r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular((screenWidth * 0.07).r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.textSecondary.withValues(alpha: 0.04),
               blurRadius: screenWidth * 0.035,
               offset: Offset(0, screenHeight * 0.008),
             ),
@@ -376,7 +379,7 @@ class AgendaScreen extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textLight,
                         fontWeight: FontWeight.w700,
                         fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
                       ),

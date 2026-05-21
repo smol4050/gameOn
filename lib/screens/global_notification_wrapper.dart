@@ -179,7 +179,7 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper>
                     },
                     child: Material(
                       elevation: 12,
-                      color: const Color(0xFF232734),
+                      color: AppColors.chatSurface,
                       borderRadius: BorderRadius.circular(20.r),
                       child: Container(
                         padding: EdgeInsets.all(16.r),
@@ -216,7 +216,7 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper>
                                         'Notificación',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: AppColors.textLight,
                                       fontSize: 15.sp,
                                       decoration: TextDecoration.none,
                                     ),
@@ -229,7 +229,7 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper>
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: Colors.white70,
+                                      color: AppColors.textLightMuted,
                                       fontSize: 13.sp,
                                       decoration: TextDecoration.none,
                                       fontWeight: FontWeight.normal,
@@ -240,7 +240,7 @@ class _GlobalNotificationWrapperState extends State<GlobalNotificationWrapper>
                             ),
                             SizedBox(width: 8.w),
                             Icon(Icons.touch_app_rounded,
-                                color: Colors.white30, size: 16.r),
+                                color: AppColors.textLightMuted, size: 16.r),
                           ],
                         ),
                       ),

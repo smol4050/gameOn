@@ -41,9 +41,9 @@ class HistorialScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: AppColors.scaffoldBackground,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.textLight,
           elevation: 0.5,
           centerTitle: true,
           title: Text(
@@ -55,7 +55,7 @@ class HistorialScreen extends StatelessWidget {
           ),
           bottom: const TabBar(
             labelColor: AppColors.primary,
-            unselectedLabelColor: Colors.grey,
+            unselectedLabelColor: AppColors.textSecondary,
             indicatorColor: AppColors.primary,
             indicatorWeight: 3,
             tabs: [
@@ -122,7 +122,7 @@ class HistorialScreen extends StatelessWidget {
     if (documentos.isEmpty) {
       return Center(
         child: Text(mensajeVacio,
-            style: TextStyle(color: Colors.grey, fontSize: 15.sp)),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 15.sp)),
       );
     }
 
@@ -141,11 +141,11 @@ class HistorialScreen extends StatelessWidget {
         return Container(
           margin: EdgeInsets.only(bottom: 14.r),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.textLight,
             borderRadius: BorderRadius.circular(18.r),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: AppColors.textSecondary.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               )
@@ -165,10 +165,11 @@ class HistorialScreen extends StatelessWidget {
             subtitle: Padding(
               padding: EdgeInsets.only(top: 4.r),
               child: Text('$sport • $dateStr',
-                  style: TextStyle(fontSize: 13.sp, color: Colors.grey)),
+                  style: TextStyle(
+                      fontSize: 13.sp, color: AppColors.textSecondary)),
             ),
             trailing: Icon(Icons.arrow_forward_ios_rounded,
-                size: 16.r, color: Colors.grey),
+                size: 16.r, color: AppColors.textSecondary),
             onTap: () {
               Navigator.push(
                 context,

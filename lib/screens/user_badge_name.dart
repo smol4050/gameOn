@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/colors.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class UserBadgeName extends StatelessWidget {
@@ -32,12 +33,12 @@ class UserBadgeName extends StatelessWidget {
         // 🔹 MEDALLITA DE ADMIN
         if (role == 'admin') ...[
           SizedBox(width: 4.w),
-          Icon(Icons.verified, color: Colors.blueAccent, size: iconSize.r),
+          Icon(Icons.verified, color: AppColors.primary, size: iconSize.r),
         ]
         // 🔹 MEDALLITA DE CREADOR DE EVENTOS
         else if (role == 'creador') ...[
           SizedBox(width: 4.w),
-          Icon(Icons.local_police, color: Colors.amber, size: iconSize.r),
+          Icon(Icons.local_police, color: AppColors.warning, size: iconSize.r),
         ],
       ],
     );

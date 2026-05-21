@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/colors.dart';
+import '../constants/app_sports.dart';
 import 'main_navigation_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -25,7 +26,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   String? _selectedLevel;
   bool _isSaving = false;
 
-  final List<String> _sports = ['Futbol', 'Baloncesto', 'Tenis', 'Padel'];
+  final List<String> _sports = AppSports.values;
   final List<String> _levels = ['Principiante', 'Intermedio', 'Avanzado'];
 
   void _saveProfile() async {
@@ -57,7 +58,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Error al guardar: $e'), backgroundColor: Colors.red),
+            content: Text('Error al guardar: $e'),
+            backgroundColor: AppColors.error),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -74,7 +76,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final radius = screenWidth * 0.035;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.textLight,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(padding.r),
@@ -92,7 +94,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Text(
                 'Hola ${widget.name}, dinos que juegas para personalizar tu experiencia.',
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: AppColors.textSecondary,
                   fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp,
                 ),
               ),
@@ -128,11 +130,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         borderRadius: BorderRadius.circular(radius.r)),
                   ),
                   child: _isSaving
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const CircularProgressIndicator(
+                          color: AppColors.textLight)
                       : Text(
                           'Finalizar Registro',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textLight,
                             fontSize: (screenWidth * 0.04).clamp(14.0, 17.0).sp,
                             fontWeight: FontWeight.w700,
                           ),
@@ -159,7 +162,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       height: height.h,
       padding: EdgeInsets.symmetric(horizontal: (horizontalPadding * 0.65).r),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(radius.r),
       ),
       child: DropdownButtonHideUnderline(

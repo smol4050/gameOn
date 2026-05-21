@@ -20,16 +20,16 @@ class AyudaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.textLight,
         elevation: 0,
         title: const Text(
           'Ayuda y Soporte',
-          style:
-              TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800),
+          style: TextStyle(
+              color: AppColors.textPrimary, fontWeight: FontWeight.w800),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFF111827)),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -44,7 +44,7 @@ class AyudaScreen extends StatelessWidget {
               style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF111827)),
+                  color: AppColors.textPrimary),
             ),
             SizedBox(height: 16.h),
             _buildFaqItem(
@@ -99,11 +99,11 @@ class AyudaScreen extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.textLight.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.support_agent_rounded,
-                    color: Colors.white, size: 32.r),
+                    color: AppColors.textLight, size: 32.r),
               ),
               SizedBox(width: 18.w),
               Expanded(
@@ -113,7 +113,7 @@ class AyudaScreen extends StatelessWidget {
                     Text(
                       '¿Necesitas más ayuda?',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textLight,
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w800),
                     ),
@@ -121,7 +121,9 @@ class AyudaScreen extends StatelessWidget {
                     Text(
                       'Nuestros administradores están listos para ayudarte con cualquier problema.',
                       style: TextStyle(
-                          color: Colors.white70, fontSize: 14.sp, height: 1.3),
+                          color: AppColors.textLightMuted,
+                          fontSize: 14.sp,
+                          height: 1.3),
                     ),
                   ],
                 ),
@@ -134,7 +136,7 @@ class AyudaScreen extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => _abrirChatDeSoporte(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.textLight,
                 foregroundColor: AppColors.primary,
                 padding: EdgeInsets.symmetric(vertical: 14.r),
                 shape: RoundedRectangleBorder(
@@ -157,34 +159,34 @@ class AyudaScreen extends StatelessWidget {
     return Container(
       margin: EdgeInsets.only(bottom: 12.r),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.textLight,
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.textSecondary.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
         ],
       ),
       child: Theme(
-        data: ThemeData().copyWith(dividerColor: Colors.transparent),
+        data: ThemeData().copyWith(dividerColor: AppColors.transparent),
         child: ExpansionTile(
           iconColor: AppColors.primary,
-          collapsedIconColor: Colors.grey,
+          collapsedIconColor: AppColors.textSecondary,
           title: Text(
             question,
             style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 15.sp,
-                color: const Color(0xFF111827)),
+                color: AppColors.textPrimary),
           ),
           childrenPadding: EdgeInsets.fromLTRB(20.r, 0.r, 20.r, 20.r),
           children: [
             Text(
               answer,
               style: TextStyle(
-                  color: const Color(0xFF6B7280), height: 1.5, fontSize: 14.sp),
+                  color: AppColors.textSecondary, height: 1.5, fontSize: 14.sp),
             ),
           ],
         ),

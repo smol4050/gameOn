@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/app_sports.dart';
 import 'confirmar_unirse_screen.dart';
 import '../theme/colors.dart';
 import 'package:intl/intl.dart';
@@ -16,19 +17,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _filtroActivo = 'Todos';
+  String _filtroActivo = AppSports.all;
 
   List<Map<String, dynamic>> _partidosRecientes = [];
 
-  final List<Map<String, dynamic>> categorias = [
-    {'title': 'Todos', 'emoji': '🌍'},
-    {'title': 'Fútbol', 'emoji': '⚽'},
-    {'title': 'Baloncesto', 'emoji': '🏀'},
-    {'title': 'Tenis', 'emoji': '🎾'},
-    {'title': 'Pádel', 'emoji': '🏓'},
-    {'title': 'Ultimate', 'emoji': '🥏'},
-    {'title': 'Vóley', 'emoji': '🏐'},
-  ];
+  List<Map<String, String>> get categorias => AppSports.filters
+      .map((sport) => {
+            'title': sport,
+            'emoji': sport == AppSports.all ? '🌍' : AppSports.emojiFor(sport),
+          })
+      .toList();
 
   @override
   void initState() {
@@ -89,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final filterHeight = (screenHeight * 0.115).clamp(82.0, 104.0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,11 +178,11 @@ class _HomeScreenState extends State<HomeScreen> {
               width: iconBox.w,
               height: iconBox.h,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.textLight,
                 borderRadius: BorderRadius.circular((screenWidth * 0.045).r),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: AppColors.textSecondary.withValues(alpha: 0.05),
                     blurRadius: screenWidth * 0.025,
                     offset: Offset(0, screenHeight * 0.005),
                   )
@@ -215,13 +213,15 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: categorias.length,
         itemBuilder: (context, i) {
           final cat = categorias[i];
-          final selected = _filtroActivo == cat['title'];
+          final title = cat['title']!;
+          final emoji = cat['emoji']!;
+          final selected = _filtroActivo == title;
           final cardWidth = (screenWidth * 0.205).clamp(74.0, 92.0);
 
           return GestureDetector(
             onTap: () {
               setState(() {
-                _filtroActivo = cat['title'];
+                _filtroActivo = title;
               });
             },
             child: AnimatedContainer(
@@ -229,11 +229,11 @@ class _HomeScreenState extends State<HomeScreen> {
               width: cardWidth,
               margin: EdgeInsets.symmetric(horizontal: (screenWidth * 0.018).r),
               decoration: BoxDecoration(
-                color: selected ? AppColors.primary : Colors.white,
+                color: selected ? AppColors.primary : AppColors.textLight,
                 borderRadius: BorderRadius.circular((screenWidth * 0.06).r),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: AppColors.textSecondary.withValues(alpha: 0.04),
                     blurRadius: screenWidth * 0.025,
                     offset: Offset(0, screenHeight * 0.005),
                   )
@@ -243,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    cat['emoji'],
+                    emoji,
                     style: TextStyle(
                         fontSize: (screenWidth * 0.07).clamp(22.0, 30.0).sp),
                   ),
@@ -252,13 +252,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.symmetric(
                         horizontal: (screenWidth * 0.01).r),
                     child: Text(
-                      cat['title'],
+                      title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: (screenWidth * 0.032).clamp(11.0, 14.0).sp,
-                        color: selected ? Colors.white : AppColors.textPrimary,
+                        color: selected
+                            ? AppColors.textLight
+                            : AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -340,13 +342,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding:
                       EdgeInsets.symmetric(horizontal: 12.r, vertical: 8.r),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.textLight,
                     borderRadius: BorderRadius.circular(16.r),
-                    border:
-                        Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+                    border: Border.all(
+                        color: AppColors.textSecondary.withValues(alpha: 0.1)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
+                        color: AppColors.textSecondary.withValues(alpha: 0.02),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       )
@@ -409,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     Query query = FirebaseFirestore.instance.collection('matches');
 
-    if (_filtroActivo != 'Todos') {
+    if (_filtroActivo != AppSports.all) {
       query = query.where('sport', isEqualTo: _filtroActivo);
     }
 
@@ -462,21 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  IconData _getSportIcon(String sport) {
-    final lowerSport = sport.toLowerCase();
-    if (lowerSport.contains('futbol') || lowerSport.contains('fútbol')) {
-      return Icons.sports_soccer;
-    } else if (lowerSport.contains('baloncesto') || lowerSport.contains('basket')) {
-      return Icons.sports_basketball;
-    } else if (lowerSport.contains('tenis') || lowerSport.contains('padel') || lowerSport.contains('pádel')) {
-      return Icons.sports_tennis;
-    } else if (lowerSport.contains('ultimate')) {
-      return Icons.animation;
-    } else if (lowerSport.contains('vóley') || lowerSport.contains('voley')) {
-      return Icons.sports_volleyball;
-    }
-    return Icons.sports;
-  }
+  IconData _getSportIcon(String sport) => AppSports.iconFor(sport);
 
   Widget _buildMatchCard(
     Map<String, dynamic> data,
@@ -520,11 +508,11 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: EdgeInsets.only(bottom: (screenHeight * 0.026).r),
         padding: EdgeInsets.all(cardPadding.r),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.textLight,
           borderRadius: BorderRadius.circular((screenWidth * 0.07).r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.textSecondary.withValues(alpha: 0.04),
               blurRadius: screenWidth * 0.035,
               offset: Offset(0, screenHeight * 0.01),
             ),
@@ -648,9 +636,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: screenHeight * 0.01,
-                    backgroundColor: const Color(0xFFF3F4F6),
+                    backgroundColor: AppColors.progressTrack,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      progress >= 1.0 ? Colors.red : AppColors.primary,
+                      progress >= 1.0 ? AppColors.error : AppColors.primary,
                     ),
                   ),
                 ),
